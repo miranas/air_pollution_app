@@ -95,6 +95,7 @@ volumes:
   grafana_data:
   portainer_data:
   ollama_data:
+  postgres_data:
 
 
 
