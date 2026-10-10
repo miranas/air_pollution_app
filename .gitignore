@@ -1,5 +1,5 @@
-    venv/
-.venv/
+# Python
+venv/
 .venv/
 __pycache__/
 *.pyc
@@ -7,11 +7,26 @@ __pycache__/
 *.pyd
 *.sqlite3
 *.db
+
+# Secrets
 .env
+
+# IDE
+.idea/
+.proxyai/
+.vscode/
+
+# Tools
+.aider*
+.pytest_cache/
+
+# Node
+node_modules/
+
+# Misc
 .DS_Store
 .migrations/
 .archive/
 
-
-node_modules
-.aider*
+# HF cache
+hf_cache/
