@@ -1,0 +1,134 @@
+NASLOV: Dušikovi oksidi v Sloveniji – splošne ugotovitve 2024
+VIR: ARSO, Kakovost zraka v Sloveniji 2024
+
+V letu 2024 mejne in kritične vrednosti za dušikove okside niso bile 
+presežene. Najvišja letna raven NO2 je bila zabeležena na prometno 
+obremenjenem merilnem mestu Ljubljana Center (38 µg/m³), kar je tik 
+pod mejno vrednostjo 40 µg/m³. Najvišje urne ravni so bile povsod pod 
+mejno vrednostjo 200 µg/m³. Dnevni hodi kažejo povišanje ravni ob 
+jutranji in večerni prometni konici, kar potrjuje močno odvisnost od 
+gostote prometa. Na nekaterih merilnih mestih v neizpostavljenem 
+mestnem okolju so izmerjene ravni dušikovih oksidov celo višje kot na 
+prometnih lokacijah.
+
+NASLOV: NO2 na merilnem mestu NG Grčna – 2024
+VIR: ARSO, Kakovost zraka v Sloveniji 2024
+
+Na merilnem mestu NG Grčna je bila povprečna letna raven NO2 v letu 
+2024 23 µg/m³. Najvišja urna raven je bila 111 µg/m³. Merilno mesto 
+je klasificirano kot urbano ozadje, vendar je vpliv prometa velik. 
+Letna raven NOx na NG Grčna je bila 43 µg/m³. Meritve so bile izvedene 
+z referenčnim merilnikom.
+
+NASLOV: Dnevni hod NO2 – jutranji in večerni višek
+VIR: ARSO, Kakovost zraka v Sloveniji 2024
+
+Dnevni hod NO2 kaže, da se na vseh merilnih mestih ob jutranji 
+prometni konici pojavi prvo obdobje višjih ravni dušikovih oksidov 
+zaradi povečanih izpustov iz prometa. V popoldanskem oziroma večernem 
+času pa se pojavi v plasti zraka pri tleh še drugo povišanje ravni 
+NO2. Na merilnih mestih, ki niso v bližini prometnih cest, so letne 
+ravni NOx celo pod vrednostjo, ki je določena kot kritična vrednost 
+za varovanje rastlin oziroma vegetacije.
+
+NASLOV: Ozon v Sloveniji – regionalni značaj
+VIR: ARSO, Kakovost zraka v Sloveniji 2024
+
+Ozon je sekundarno onesnaževalo, saj v prizemni plasti zraka ni 
+njegovih neposrednih izpustov. Ker so kompleksne reakcije, ki vodijo 
+do nastanka ozona intenzivnejše ob visoki temperaturi in močnem 
+sončnem obsevanju, je onesnaženost zraka z ozonom največja poleti. 
+Snovem, iz katerih nastaja ozon, pravimo predhodniki ozona in 
+obsegajo dušikove okside, ogljikov monoksid, atmosferski metan ter 
+nemetanske hlapne organske spojine. Na prometnih merilnih mestih so 
+ravni ozona nižje, ker ta hitro reagira z dušikovim monoksidom iz 
+izpušnih plinov in razpade nazaj v običajni dvoatomni kisik tako, da 
+odda atom kisika molekuli dušikovega monoksida in ga oksidira v 
+dušikov dioksid. Če po višini prevladuje zahodna smer, bo prineslo 
+onesnažen zrak iz Padske nižine, ki ima zaradi mnogih izpustov 
+predhodnikov ozona v splošnem višje ravni ozona. V tem primeru lahko 
+pride do preseganja opozorilne vrednosti na Primorskem.
+
+NASLOV: Ozon na NG Grčna – 2024
+VIR: ARSO, Kakovost zraka v Sloveniji 2024
+
+Na merilnem mestu NG Grčna je bila povprečna letna raven ozona v 
+letu 2024 47 µg/m³. Najvišja urna vrednost je bila izmerjena 
+16. julija 2024 ob 16:00, in sicer 173 µg/m³. Ciljna vrednost za 
+varovanje zdravja (120 µg/m³) je bila presežena 36-krat. Merilno 
+mesto NG Grčna je pod vplivom prometa, zato so ravni ozona nižje, 
+kot bi bile sicer glede na lego na Primorskem.
+
+NASLOV: Delci PM10 in PM2.5 v Sloveniji – 2024
+VIR: ARSO, Kakovost zraka v Sloveniji 2024
+
+V letu 2024 je bila onesnaženost zraka z delci nekoliko višja kot v 
+preteklih letih. Ravni delcev PM10 so na treh merilnih mestih presegle 
+dovoljeno število preseganj (35) dnevne mejne vrednosti 50 µg/m³. 
+Največ preseganj (49) je bilo zabeleženih na prometnem merilnem mestu 
+Ljubljana Center, sledita Črnomelj (39) in Črna na Koroškem (37). 
+Najvišja povprečna letna vrednost, 30 µg/m³, je bila izmerjena na 
+prometnem merilnem mestu Ljubljana Center. Letna mejna vrednost za 
+PM2.5 (20 µg/m³) ni bila presežena na nobenem merilnem mestu. Najvišja 
+povprečna letna vrednost PM2.5 je bila izmerjena v Črnomlju (19 µg/m³). 
+Do večine preseganj je prišlo v hladnem obdobju leta, ko so bili 
+pogosti temperaturni obrati, ki onemogočajo razredčevanje izpustov 
+predvsem iz malih kurilnih naprav in prometa.
+
+NASLOV: PM10 in PM2.5 na NG Grčna – 2024
+VIR: ARSO, Kakovost zraka v Sloveniji 2024
+
+Na merilnem mestu NG Grčna je bila povprečna letna raven PM10 v 
+letu 2024 18 µg/m³. Najvišja dnevna raven je bila 83 µg/m³. Število 
+preseganj dnevne mejne vrednosti (50 µg/m³) je bilo 9. Po upoštevanju 
+deleža puščavskega prahu se je število preseganj zmanjšalo na 7. 
+Povprečna letna raven PM2.5 je bila 12 µg/m³, najvišja dnevna pa 
+67 µg/m³.
+
+NASLOV: Črni ogljik – ločevanje virov
+VIR: ARSO, Kakovost zraka v Sloveniji 2024
+
+Črni ogljik (saje) je primarni produkt nepopolnega zgorevanja. 
+Meritve se izvajajo z merilnikom Aethalometer AE33, ki omogoča 
+prepoznavanje virov črnega ogljika glede na različne atenuacije 
+svetlobe. Črni ogljik iz fosilnih goriv je intenzivno črn in ima 
+slabo svetlobno absorpcijo v vseh valovnih dolžinah, medtem ko 
+črni ogljik, ki je posledica gorenja biomase, vsebuje več aromatičnih 
+in drugih organskih spojin, ki imajo večjo absorpcijsko sposobnost v 
+ultravijoličnem, modrem in vidnem spektru sevanja. Preko sevanja v 
+različnem delu spektra lahko določimo vir črnega ogljika. V letu 2024 
+so meritve črnega ogljika potekale na lokacijah Ljubljana – Bežigrad, 
+Krvavec, Zagorje in Iskrba. Na vseh lokacijah prevladuje črni ogljik 
+iz fosilnih goriv. Delež črnega ogljika iz biomase je bil najmanjši 
+na lokaciji Krvavec (29 %), medtem ko je bil največji na lokaciji 
+Zagorje (38 %).
+
+NASLOV: Padska nižina – čezmejni vpliv na Slovenijo
+VIR: ARSO, Kakovost zraka v Sloveniji 2024
+
+Padska nižina v severni Italiji je gosto poseljeno in industrializirano 
+območje s specifičnimi meteorološkimi ter geografskimi značilnostmi. 
+Zaradi mnogih izpustov predhodnikov ozona ima v splošnem višje ravni 
+ozona. Če po višini prevladuje zahodna smer, bo prineslo onesnažen 
+zrak iz Padske nižine. V tem primeru lahko pride do preseganja 
+opozorilne vrednosti na Primorskem. V letu 2024 je bilo najvišje 
+število preseganj 8-urne ciljne vrednosti za ozon (120 µg/m³) 
+zabeleženo v Kopru (58 preseganj), sledijo Otlica (60), Krvavec (55) 
+in NG Grčna (47).
+
+NASLOV: Mejne in ciljne vrednosti onesnaževal
+VIR: ARSO, Kakovost zraka v Sloveniji 2024
+
+Mejne vrednosti so predpisane v Uredbi o kakovosti zunanjega zraka. 
+Za NO2: urna mejna vrednost 200 µg/m³ (18 preseganj/leto), letna 
+mejna vrednost 40 µg/m³. Za PM10: dnevna mejna vrednost 50 µg/m³ 
+(35 preseganj/leto), letna mejna vrednost 40 µg/m³. Za PM2.5: 
+letna mejna vrednost 20 µg/m³. Za ozon: ciljna vrednost 120 µg/m³ 
+za maksimalno dnevno 8-urno povprečje (25 preseganj v triletnem 
+povprečju), opozorilna vrednost 180 µg/m³, alarmna vrednost 
+240 µg/m³. Za SO2: urna mejna vrednost 350 µg/m³, dnevna mejna 
+vrednost 125 µg/m³. Za benzen: letna mejna vrednost 5 µg/m³. 
+Za svinec: letna mejna vrednost 500 ng/m³. Za arzen: letna ciljna 
+vrednost 6 ng/m³. Za kadmij: letna ciljna vrednost 5 ng/m³. Za 
+nikelj: letna ciljna vrednost 20 ng/m³. Za benzo(a)piren: letna 
+ciljna vrednost 1 ng/m³.

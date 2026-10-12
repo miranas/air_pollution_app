@@ -1,0 +1,151 @@
+NASLOV: Uredba o kakovosti zunanjega zraka – splošno
+VIR: Uradni list RS, št. 9/11, 8/15, 66/18 in 44/22 – ZVO-2
+
+Uredba o kakovosti zunanjega zraka določa mejne, opozorilne in 
+kritične vrednosti za onesnaževala v zunanjem zraku. Prenesena je 
+iz Direktive 2008/50/ES Evropskega parlamenta in Sveta o kakovosti 
+zunanjega zraka in čistejšem zraku za Evropo. Uredba določa tudi 
+načine ocenjevanja kakovosti zraka, obveščanje javnosti in ukrepe 
+ob preseganju mejnih vrednosti.
+
+NASLOV: Mejne vrednosti za dušikov dioksid (NO2)
+VIR: Uredba o kakovosti zunanjega zraka
+
+Za dušikov dioksid (NO2) sta predpisani:
+- Urna mejna vrednost: 200 µg/m³, ki je lahko presežena največ 
+  18-krat v koledarskem letu.
+- Letna mejna vrednost: 40 µg/m³.
+- Alarmna vrednost: 400 µg/m³ (tri zaporedne ure).
+Mejne vrednosti so določene za zaščito zdravja ljudi.
+
+NASLOV: Mejne vrednosti za delce PM10 in PM2.5
+VIR: Uredba o kakovosti zunanjega zraka
+
+Za delce PM10 sta predpisani:
+- Dnevna mejna vrednost: 50 µg/m³, ki je lahko presežena največ 
+  35-krat v koledarskem letu.
+- Letna mejna vrednost: 40 µg/m³.
+
+Za delce PM2.5 je predpisana:
+- Letna mejna vrednost: 20 µg/m³ (od leta 2020 dalje).
+- Obveznost glede stopnje izpostavljenosti: triletno povprečje 
+  20 µg/m³.
+
+NASLOV: Ciljne vrednosti za ozon (O3)
+VIR: Uredba o kakovosti zunanjega zraka
+
+Za ozon so predpisane:
+- Ciljna vrednost za varovanje zdravja: maksimalna dnevna 8-urna 
+  povprečna vrednost 120 µg/m³, ki je lahko presežena največ 
+  25-krat v triletnem povprečju.
+- Dolgoročna ciljna vrednost za varovanje zdravja: 120 µg/m³ 
+  (brez dovoljenih preseganj).
+- Ciljna vrednost za varovanje rastlin (AOT40): 18000 µg/m³·h, 
+  povprečje petih let.
+- Opozorilna vrednost: 180 µg/m³ (urna).
+- Alarmna vrednost: 240 µg/m³ (urna).
+
+NASLOV: Mejne vrednosti za žveplov dioksid (SO2)
+VIR: Uredba o kakovosti zunanjega zraka
+
+Za žveplov dioksid so predpisane:
+- Urna mejna vrednost: 350 µg/m³, ki je lahko presežena največ 
+  24-krat v koledarskem letu.
+- Dnevna mejna vrednost: 125 µg/m³, ki je lahko presežena največ 
+  3-krat v koledarskem letu.
+- Alarmna vrednost: 500 µg/m³ (tri zaporedne ure).
+- Kritična vrednost za varovanje vegetacije: 20 µg/m³ (letna in 
+  zimska).
+
+NASLOV: Mejne vrednosti za benzen, svinec in težke kovine
+VIR: Uredba o kakovosti zunanjega zraka, Uredba o arzenu, kadmiju, 
+živem srebru, niklju in policikličnih aromatskih ogljikovodikih
+
+Za benzen: letna mejna vrednost 5 µg/m³.
+Za svinec: letna mejna vrednost 500 ng/m³.
+Za arzen: letna ciljna vrednost 6 ng/m³.
+Za kadmij: letna ciljna vrednost 5 ng/m³.
+Za nikelj: letna ciljna vrednost 20 ng/m³.
+Za benzo(a)piren: letna ciljna vrednost 1 ng/m³.
+
+NASLOV: Direktiva (EU) 2024/2881 – nove mejne vrednosti
+VIR: Direktiva (EU) 2024/2881 o kakovosti zunanjega zraka
+
+Oktobra 2024 je bila sprejeta revidirana Direktiva (EU) 2024/2881 
+o kakovosti zunanjega zraka in čistejšem zraku za Evropo. 
+Slovenija jo mora prenesti v svoj pravni red najkasneje do 
+11. decembra 2026. Nove strožje mejne vrednosti je treba doseči 
+do 1. 1. 2030. Nove mejne vrednosti se približujejo smernicam 
+Svetovne zdravstvene organizacije (WHO) iz leta 2021.
+
+NASLOV: BAT zaključki za livarne in kovačnice (2024/2974)
+VIR: Izvedbeni sklep Komisije (EU) 2024/2974
+
+Dne 6. decembra 2024 je bil objavljen Izvedbeni sklep Komisije o 
+zaključkih o najboljših razpoložljivih tehnikah (BAT) za industrijo 
+kovanja in livarn. Dovoljenja obstoječih naprav morajo biti 
+posodobljena v štirih letih, da bodo skladna s temi normami, 
+vključno z vonjavami. BAT zaključki določajo mejne vrednosti 
+emisij (BAT-AEL) za prah, amine, TVOC, NOx in SO2 iz livarskih 
+procesov.
+
+NASLOV: 26. člen Direktive o industrijskih emisijah (IED)
+VIR: Direktiva 2010/75/EU o industrijskih emisijah
+
+26. člen Direktive o industrijskih emisijah zahteva sodelovanje 
+med sosednjimi državami članicami za omejitev posledic delovanja 
+naprav na okolje in zdravje ljudi. To vključuje posvetovanje z 
+drugo državo članico med postopkom izdaje dovoljenja. V primeru 
+čezmejnih vplivov morajo države članice sodelovati pri 
+preprečevanju in zmanjševanju onesnaževanja.
+
+NASLOV: Direktiva o kakovosti zraka – čezmejni prenos
+VIR: Direktiva 2008/50/ES, Direktiva (EU) 2024/2881
+
+V skladu z Direktivo o kakovosti zraka, kadar so presežene mejne 
+ali ciljne vrednosti kakovosti zraka znatno pod vplivom 
+onesnaženja, prenesenega iz druge države članice, morajo države 
+članice obvestiti Komisijo in sodelovati z zadevnimi državami 
+članicami za odpravo presežkov. Na podlagi zadnjih razpoložljivih 
+podatkov, sporočenih Komisiji za leto 2024, ni bilo presežkov 
+standardov kakovosti zraka v Gorici ali Novi Gorici za trdne 
+delce, dušikov dioksid ali benzo(a)piren.
+
+NASLOV: Odgovor Evropske komisije o Livarni Gorica (E-002320/2026)
+VIR: Evropski parlament, 17. 7. 2026
+
+Evropska komisija je seznanjena s čezmejnimi vonjavami iz 
+industrijske naprave Livarna Gorica d.o.o. in razume, da so se 
+začeli pogovori med italijanskimi in slovenskimi lokalnimi 
+oblastmi. Komisija zato na tej stopnji ne namerava posredovati. 
+V svoji vlogi varuha Pogodb Komisija spremlja uporabo prava EU 
+in se lahko odloči za ustrezne ukrepe. Dne 6. decembra 2024 je 
+bil objavljen Izvedbeni sklep Komisije o zaključkih o najboljših 
+razpoložljivih tehnikah (BAT) za industrijo kovanja in livarn. 
+Dovoljenja obstoječih naprav morajo biti posodobljena v štirih 
+letih, da bodo skladna s temi normami, vključno z vonjavami. 
+Poleg tega 26. člen Direktive o industrijskih emisijah zahteva 
+sodelovanje med sosednjimi državami članicami za omejitev 
+posledic delovanja naprav na okolje in zdravje ljudi. V skladu 
+z Direktivo o kakovosti zraka, kadar so presežene mejne ali 
+ciljne vrednosti kakovosti zraka znatno pod vplivom onesnaženja, 
+prenesenega iz druge države članice, morajo države članice 
+obvestiti Komisijo in sodelovati z zadevnimi državami članicami 
+za odpravo presežkov. Na podlagi zadnjih razpoložljivih podatkov, 
+sporočenih Komisiji za leto 2024, ni bilo presežkov standardov 
+kakovosti zraka v Gorici ali Novi Gorici za trdne delce, 
+dušikov dioksid ali benzo(a)piren.
+
+NASLOV: Smernice WHO za kakovost zraka (2021)
+VIR: Svetovna zdravstvena organizacija, 2021
+
+Svetovna zdravstvena organizacija (WHO) je septembra 2021 izdala 
+nove smernice o kakovosti zraka. Od leta 2005, ko so bile 
+objavljene prejšnje smernice WHO, so bile narejene številne 
+raziskave, ki podajajo dokaze o tem, kako onesnažen zrak deluje 
+na zdravje ljudi. Nove smernice so nastale kot posledica vse 
+večje ogroženosti zdravja prebivalcev zaradi onesnaženega zraka. 
+Raziskave ugotavljajo visoko stopnjo povezanosti kakovosti zraka 
+z boleznimi srca in ožilja, dihalnimi obolenji, nevrološkimi 
+obolenji, sladkorno boleznijo in težavami v reproduktivnem 
+sistemu. Smernice WHO so strožje od mejnih vrednosti EU.

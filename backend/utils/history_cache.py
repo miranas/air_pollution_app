@@ -399,7 +399,7 @@ def get_history_payload(period: str, station_id_filter: str | None = None) -> Op
         return cached_payload
 
     try:
-        payload = build_history_payload_from_db(period)
+        payload = build_history_payload_from_db(period, station_id_filter)
     except Exception:
         logging.exception('Failed to build history payload from DB')
         return None

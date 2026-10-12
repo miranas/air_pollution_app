@@ -1,0 +1,114 @@
+NASLOV: Večerni višek NO2 na NG Grčna – osnovna ugotovitev
+VIR: analiza ARSO 2026
+
+Analiza ARSO podatkov za postajo NG Grčna kaže, da ima večerni 
+višek NO2 vrh ob 21. uri (32,97 µg/m³), ob 22. uri (39,95 µg/m³) 
+in ob 23. uri (26,95 µg/m³). To je bistveno višje od povprečja 
+mestnih postaj v istem obdobju (15,26 µg/m³, 16,55 µg/m³, 
+15,89 µg/m³). Razlika je največja ob 22. uri, ko je NG Grčna 
+2,41-krat višja od mestnih postaj. Hkrati ozon pade na NG Grčna 
+(51,89 µg/m³) v primerjavi z mestnimi postajami (74,98 µg/m³), 
+kar je posledica reakcije NO + O3 → NO2 + O2.
+
+NASLOV: Zakaj večerni višek ni promet
+VIR: analiza ARSO 2026
+
+Večerni višek NO2 na NG Grčna med 21. in 00. uro ni promet. 
+Prometna konica v Novi Gorici je med 17. in 19. uro, ko se ljudje 
+vračajo iz službe. Ob 21. uri in kasneje je promet že močno upadel. 
+Poleg tega analiza razmerja med NO2 in NOx kaže, da je oblak na 
+NG Grčna starejši (več NO2, manj NO), kar ni značilno za sveže 
+prometne izpuste. Zato je treba iskati vir, ki ni promet.
+
+NASLOV: Kemijski podpis industrijskega vira
+VIR: analiza ARSO 2026
+
+Industrijski vir spušča dušikov monoksid (NO), ki nastaja pri 
+visokotemperaturnem izgorevanju (>1200 °C). Ko ta vroč oblak NO 
+zapusti dimnik in potuje proti merilni postaji, trči ob ozon (O3), 
+ki se je v zraku nakopičil čez dan. Reakcija NO + O3 → NO2 + O2 
+poteka izjemno hitro. Rezultat: ozon strmo pade, NO2 strmo 
+naraste. Ker je do trenutka, ko oblak doseže merilno postajo, 
+praktično ves NO že prešel v NO2, postane raven NO blizu ničle, 
+krivulja NO2 pa se do potankosti prekrije s krivuljo skupnih NOx.
+
+NASLOV: Primerjava večernih viškov NO2 – NG Grčna proti drugim mestom
+VIR: analiza ARSO 2026
+
+V drugih slovenskih mestih je večerni višek NO2 običajno posledica 
+prometne konice. Analiza povprečnih vrednosti NO2 ob 17h–0h kaže, 
+da ima NG Grčna najvišji večerni višek (38,89 µg/m³ ob 21h, 
+38,38 µg/m³ ob 22h). Sledita LJ Celovška (29,16 µg/m³ ob 22h) in 
+CE bolnica (28,23 µg/m³ ob 21h). Čas viška je v drugih mestih 
+podoben (med 20h in 23h), zato čas sam po sebi ni edinstven. Kar 
+je edinstveno, je višina viška – NG Grčna je približno 1,3–1,4-krat 
+višja od naslednje postaje. To kaže na lokalni industrijski vir, ki 
+ni promet.
+
+NASLOV: Poletni višek – vztrajen, ne pa nujno edinstven
+VIR: analiza ARSO 2026
+
+Poletni večerni višek NO2 je prisoten tudi v drugih mestih, 
+vendar je na NG Grčna bistveno bolj izrazit in ne izgine, ko 
+promet upade. V Mariboru je poletni večerni vrh 'zelo neizrazit', 
+na NG Grčna pa ostaja enako močan kot pozimi. V Ljubljani je 
+poletni višek še vedno povezan s prometom (jutranja in večerna 
+konica), na NG Grčna pa ostaja tudi v urah, ko prometa ni. To 
+kaže na stalen industrijski vir, ki obratuje tudi poleti.
+
+NASLOV: Ozon pade na NG Grčna – kemijski dokaz
+VIR: analiza ARSO 2026
+
+V večernih urah (21h–00h) na NG Grčna ozon strmo pade, hkrati pa 
+NO2 naraste. To je kemijski podpis reakcije NO + O3 → NO2 + O2. 
+Svež dušikov monoksid (NO) porabi ozon. Vir NO je lokalni. 
+Primerjava z drugimi mestnimi postajami pokaže, da imajo te višji 
+ozon od NG Grčna. Razlika je največja ob 22h (+23,09 µg/m³). To 
+pomeni, da lokalni vir NO na NG Grčna uničuje ozon.
+
+NASLOV: Razmerje NO2/NOx – kemijski podpis starega oblaka
+VIR: analiza ARSO 2026
+
+Analiza razmerja med NO2 in NOx (NO2/NOx) po urah med 17h in 0h 
+kaže, da se razmerje zvečer povečuje – proti polnoči. To pomeni, da 
+se NO pretvarja v NO2, kar je znak staranja zračne mase. NG Grčna 
+ima praviloma višje razmerje kot LJ Celovška, kar pomeni večji delež 
+NO2 v skupnih NOx. Podoben vzorec je prisoten tudi v nekaterih drugih 
+mestih, zato ta argument sam po sebi ni dokaz. Je pa skladen s 
+hipotezo, da je vir na NG Grčna industrijski – ta spušča NO, ki 
+oksidira v NO2, preden doseže merilno postajo.
+
+NASLOV: Črni ogljik – ločevanje fosilnih goriv od biomase
+VIR: analiza ARSO 2026
+
+Za dokončno ločitev med fosilnimi gorivi (industrija) in biomaso 
+(kurjenje) je treba meriti črni ogljik. Z Ångströmovim eksponentom 
+(AAE) lahko določimo vir: AAE < 1 pomeni fosilna goriva, AAE > 1 
+pomeni biomaso. V letu 2024 so meritve črnega ogljika v Sloveniji 
+pokazale, da na vseh lokacijah prevladuje črni ogljik iz fosilnih 
+goriv. To podpira hipotezo, da je vir na NG Grčna industrijski.
+
+NASLOV: Ključni dokazi za industrijski vir – povzetek
+VIR: analiza ARSO 2026
+
+Analiza je pokazala naslednje dokaze, ki kažejo na lokalni 
+industrijski vir onesnaženja v Novi Gorici:
+1. NG Grčna ima najvišji večerni višek NO2 in NOx v državi 
+   (38,89 µg/m³ ob 21h) – približno 1,3–1,4-krat višji od 
+   naslednje postaje.
+2. Višek je prisoten tudi poleti, ko ni kurjenja in ko je promet 
+   manjši. Čeprav je prisoten tudi v drugih mestih, je na NG Grčna 
+   bistveno bolj izrazit in ne izgine, ko promet upade.
+3. Ozon pade, ko NOx naraste – kemijski podpis reakcije NO + O3.
+4. Razmerje NO2/NOx je višje kot na prometnih postajah – staran 
+   oblak. Ta argument ni edinstven, je pa skladen s hipotezo.
+
+NASLOV: Kaj še manjka za dokončen dokaz
+VIR: analiza ARSO 2026
+
+Za dokončen dokaz, da je vir industrijski, je treba opraviti še:
+1. Meritve lastnih senzorjev na mikrolokaciji (npr. v bližini vira).
+2. Kalibracijo senzorjev ob referenčni postaji.
+3. Meritev črnega ogljika (za ločitev fosilnih goriv od biomase).
+4. Uradno potrditev s strani inšpekcije ali raziskovalne institucije.
+5. Pravno podlago za morebitne ukrepe.
