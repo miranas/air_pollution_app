@@ -1,0 +1,1 @@
+Zakaj `timestamptz` (ali zakaj ne), zakaj `app_context`, zakaj `TZ`

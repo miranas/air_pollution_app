@@ -1,0 +1,1 @@
+Docker Compose, .env, baza, Redis

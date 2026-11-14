@@ -4,7 +4,6 @@ from datetime import datetime
 
 
 
-
 # Custom JSON provider to ensure UTF-8 encoding   
 class UTF8JsonProvider(DefaultJSONProvider):
     def dumps(self, obj: Any, **kwargs: Any) -> str:
@@ -20,7 +19,6 @@ class UTF8JsonProvider(DefaultJSONProvider):
         kwargs['sort_keys'] = False
 
         return super().dumps(obj, **kwargs)
-
 
 
 # Serialization function

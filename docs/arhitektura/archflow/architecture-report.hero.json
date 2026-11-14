@@ -1,0 +1,276 @@
+{
+  "archflow_hero": 1,
+  "project": {
+    "title": "Air Pollution App",
+    "subtitle": "Hourly ARSO telemetry and document evidence meet in one state layer, then split into a live dashboard and a LangGraph question-answering plane"
+  },
+  "canvas": { "width": 1680, "height": 700 },
+  "zones": [
+    { "id": "zone-sources", "title": "External sources", "tone": "cool", "frame": { "x": 20, "y": 58, "w": 250, "h": 620 } },
+    { "id": "zone-ingest", "title": "Ingest & index", "tone": "mint", "frame": { "x": 320, "y": 58, "w": 300, "h": 620 } },
+    { "id": "zone-state", "title": "State layer", "tone": "amber", "frame": { "x": 680, "y": 58, "w": 280, "h": 620 } },
+    { "id": "zone-serve", "title": "Reason & serve", "tone": "violet", "frame": { "x": 1020, "y": 58, "w": 300, "h": 620 } },
+    { "id": "zone-clients", "title": "Clients", "tone": "blue", "frame": { "x": 1380, "y": 58, "w": 260, "h": 620 } }
+  ],
+  "entities": [
+    {
+      "id": "arso",
+      "title": "ARSO hourly feed",
+      "caption": "Official XML telemetry for Slovenian stations",
+      "kind": "source",
+      "zone": "zone-sources",
+      "tag": "XML",
+      "frame": { "x": 45, "y": 110, "w": 210, "h": 84 },
+      "evidence": [
+        { "path": "backend/network/arso_client.py", "start_line": 1, "end_line": 40 },
+        { "path": "backend/network/config.py", "start_line": 1, "end_line": 4 }
+      ]
+    },
+    {
+      "id": "docs",
+      "title": "RAG source docs",
+      "caption": "Uredba · poročila · definitions",
+      "kind": "source",
+      "zone": "zone-sources",
+      "tag": "DOCS",
+      "frame": { "x": 45, "y": 290, "w": 210, "h": 84 },
+      "evidence": [{ "path": "ai/rag/watcher.py", "start_line": 1, "end_line": 58 }]
+    },
+    {
+      "id": "ingest",
+      "title": "ARSO ingest & merge",
+      "caption": "fetch → parse → merge → cache",
+      "kind": "process",
+      "zone": "zone-ingest",
+      "tag": "FLASK",
+      "frame": { "x": 345, "y": 107, "w": 250, "h": 90 },
+      "evidence": [{ "path": "backend/data/update_data.py", "start_line": 1, "end_line": 115 }]
+    },
+    {
+      "id": "indexer",
+      "title": "Document indexer",
+      "caption": "watchdog → chunk → Ollama embed",
+      "kind": "process",
+      "zone": "zone-ingest",
+      "tag": "WATCH",
+      "frame": { "x": 345, "y": 287, "w": 250, "h": 90 },
+      "evidence": [
+        { "path": "ai/rag/vectorize.py", "start_line": 1, "end_line": 60 },
+        { "path": "ai/rag/vectorize.py", "start_line": 103, "end_line": 205 }
+      ]
+    },
+    {
+      "id": "state",
+      "title": "PostgreSQL + Redis",
+      "caption": "pgvector docs · measurements · cached payloads",
+      "kind": "store",
+      "zone": "zone-state",
+      "tag": "PG17",
+      "frame": { "x": 705, "y": 160, "w": 240, "h": 150 },
+      "evidence": [
+        { "path": "backend/database/db_models.py", "start_line": 1, "end_line": 62 },
+        { "path": "backend/utils/redis.py", "start_line": 1, "end_line": 107 }
+      ]
+    },
+    {
+      "id": "flask",
+      "title": "Flask REST API",
+      "caption": "/api/latest · /api/history",
+      "kind": "interface",
+      "zone": "zone-serve",
+      "tag": "API",
+      "frame": { "x": 1045, "y": 100, "w": 250, "h": 100 },
+      "evidence": [
+        { "path": "backend/routes/api_latest.py", "start_line": 1, "end_line": 181 },
+        { "path": "backend/app.py", "start_line": 1, "end_line": 80 }
+      ]
+    },
+    {
+      "id": "graph",
+      "title": "LangGraph router",
+      "caption": "router → rag | sql | redis | splosno",
+      "kind": "control",
+      "zone": "zone-serve",
+      "tag": "LG",
+      "frame": { "x": 1045, "y": 290, "w": 250, "h": 110 },
+      "evidence": [
+        { "path": "ai/graph.py", "start_line": 1, "end_line": 56 },
+        { "path": "ai/nodes/router.py", "start_line": 1, "end_line": 83 }
+      ]
+    },
+    {
+      "id": "answer",
+      "title": "Answer composer",
+      "caption": "DeepSeek · grounded in retrieved context",
+      "kind": "process",
+      "zone": "zone-serve",
+      "tag": "LLM",
+      "frame": { "x": 1045, "y": 500, "w": 250, "h": 100 },
+      "evidence": [{ "path": "ai/nodes/answer.py", "start_line": 1, "end_line": 85 }]
+    },
+    {
+      "id": "ui",
+      "title": "Next.js dashboard",
+      "caption": "AQI cards · history charts",
+      "kind": "view",
+      "zone": "zone-clients",
+      "tag": "NEXT",
+      "frame": { "x": 1405, "y": 100, "w": 210, "h": 100 },
+      "evidence": [
+        { "path": "frontend-next/app/page.tsx", "start_line": 1, "end_line": 120 },
+        { "path": "frontend-next/app/utils/aqi.ts", "start_line": 1, "end_line": 80 }
+      ]
+    },
+    {
+      "id": "cli",
+      "title": "CLI ask()",
+      "caption": "python -m ai.main \"vprašanje\"",
+      "kind": "interface",
+      "zone": "zone-clients",
+      "tag": "CLI",
+      "frame": { "x": 1405, "y": 290, "w": 210, "h": 100 },
+      "evidence": [{ "path": "ai/main.py", "start_line": 1, "end_line": 52 }]
+    }
+  ],
+  "flows": [
+    {
+      "id": "arso-ingest",
+      "source": "arso",
+      "target": "ingest",
+      "label": "XML",
+      "kind": "data",
+      "label_at": [295, 139]
+    },
+    {
+      "id": "docs-indexer",
+      "source": "docs",
+      "target": "indexer",
+      "label": "docs",
+      "kind": "data",
+      "label_at": [295, 319]
+    },
+    {
+      "id": "ingest-state",
+      "source": "ingest",
+      "target": "state",
+      "label": "rows",
+      "kind": "data",
+      "source_offset": 33,
+      "target_offset": -50,
+      "label_at": [650, 172]
+    },
+    {
+      "id": "indexer-state",
+      "source": "indexer",
+      "target": "state",
+      "label": "vecs",
+      "kind": "data",
+      "via": [[650, 332], [650, 285]],
+      "target_offset": 50,
+      "label_at": [650, 269]
+    },
+    {
+      "id": "state-flask",
+      "source": "state",
+      "target": "flask",
+      "label": "SQL",
+      "kind": "data",
+      "source_offset": -50,
+      "target_offset": 35,
+      "label_at": [990, 172]
+    },
+    {
+      "id": "state-graph",
+      "source": "state",
+      "target": "graph",
+      "label": "RAG",
+      "kind": "data",
+      "source_offset": 50,
+      "via": [[975, 285], [975, 345]],
+      "label_at": [990, 365]
+    },
+    {
+      "id": "flask-ui",
+      "source": "flask",
+      "target": "ui",
+      "label": "JSON",
+      "kind": "data",
+      "label_at": [1350, 137]
+    },
+    {
+      "id": "cli-graph",
+      "source": "cli",
+      "target": "graph",
+      "label": "ask",
+      "kind": "request",
+      "source_port": "left",
+      "target_port": "right",
+      "source_offset": -20,
+      "target_offset": -25,
+      "label_at": [1350, 307]
+    },
+    {
+      "id": "graph-answer",
+      "source": "graph",
+      "target": "answer",
+      "label": "context",
+      "kind": "data",
+      "source_port": "bottom",
+      "target_port": "top",
+      "label_at": [1210, 453]
+    },
+    {
+      "id": "answer-cli",
+      "source": "answer",
+      "target": "cli",
+      "label": "reply",
+      "kind": "response",
+      "source_offset": -20,
+      "via": [[1350, 530], [1350, 360]],
+      "target_offset": 20,
+      "label_at": [1350, 347]
+    }
+  ],
+  "chapters": [
+    {
+      "id": "chapter-collect",
+      "label": "01 · Collect signals",
+      "color": "mint",
+      "zones": ["zone-sources", "zone-ingest"],
+      "entities": ["arso", "docs", "ingest", "indexer"],
+      "flows": ["arso-ingest", "docs-indexer"]
+    },
+    {
+      "id": "chapter-persist",
+      "label": "02 · Persist & index",
+      "color": "amber",
+      "zones": ["zone-ingest", "zone-state"],
+      "entities": ["ingest", "indexer", "state"],
+      "flows": ["ingest-state", "indexer-state"]
+    },
+    {
+      "id": "chapter-serve",
+      "label": "03 · Serve live readings",
+      "color": "blue",
+      "zones": ["zone-state", "zone-serve", "zone-clients"],
+      "entities": ["state", "flask", "ui"],
+      "flows": ["state-flask", "flask-ui"]
+    },
+    {
+      "id": "chapter-reason",
+      "label": "04 · Reason over questions",
+      "color": "violet",
+      "zones": ["zone-state", "zone-serve", "zone-clients"],
+      "entities": ["state", "graph", "answer", "cli"],
+      "flows": ["state-graph", "cli-graph", "graph-answer", "answer-cli"]
+    },
+    {
+      "id": "chapter-system",
+      "label": "05 · Complete system",
+      "color": "white",
+      "zones": ["zone-sources", "zone-ingest", "zone-state", "zone-serve", "zone-clients"],
+      "entities": ["arso", "docs", "ingest", "indexer", "state", "flask", "graph", "answer", "ui", "cli"],
+      "flows": ["arso-ingest", "docs-indexer", "ingest-state", "indexer-state", "state-flask", "state-graph", "flask-ui", "cli-graph", "graph-answer", "answer-cli"]
+    }
+  ]
+}

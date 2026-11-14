@@ -1,0 +1,51 @@
+[project]
+name = "air-pollution-app"
+version = "0.1.0"
+description = "AI agent za kakovost zraka v Sloveniji"
+requires-python = ">=3.12"
+dependencies = [
+    # === AI / LangGraph ===
+    "langgraph>=0.2.0",
+    "langchain-openai>=0.2.0",
+    "langchain-core>=0.3.15",
+    # === FastAPI ===
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic>=2.9.0",
+    # === Backend (Flask) ===
+    "flask>=3.0.0",
+    "flask-caching>=2.3.0",
+    "flask-cors>=4.0.0",
+    "sqlalchemy>=2.0.0",
+    "gunicorn>=21.2.0",
+    # === Baza ===
+    "psycopg2-binary>=2.9.0",
+    "pgvector>=0.3.0",
+    "redis>=5.0.0",
+    # === HTTP / scraping ===
+    "httpx>=0.27.0",
+    "requests>=2.32.0",
+    "beautifulsoup4>=4.12.0",
+    "lxml>=5.3.0",
+    # === PDF / dokumenti ===
+    "pdfplumber>=0.11.0",
+    "python-docx>=1.1.0",
+    "refinedoc>=1.0.0",
+    "konan>=0.4.0",
+    # === Podatki ===
+    "pandas>=2.2.0",
+    "numpy>=1.26.0",
+    "scipy>=1.14.0",
+    # === Ostalo ===
+    "python-dotenv>=1.0.0",
+    "watchdog>=6.0.0",
+    # === Testi ===
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "apscheduler>=3.11.3",
+    "prometheus-flask-exporter>=0.23.2",
+    "psycopg[binary]>=3.3.6",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "ai/tests"]

@@ -1,0 +1,46 @@
+NASLOV: Mejne vrednosti za kakovost zunanjega zraka
+VIR: Uredba o kakovosti zunanjega zraka (Uradni list RS, št. 9/11, 8/15, 66/18, 44/22)
+
+SPLOŠNO:
+- Letna mejna vrednost se nanaša na LETNO POVPREČJE, ne na posamezne meritve.
+- Urna mejna vrednost se nanaša na posamezne urne meritve.
+- Dnevna mejna vrednost se nanaša na dnevno povprečje.
+
+DUŠIKOV DIOKSID (NO2):
+- Urna mejna vrednost: 200 µg/m³ (dovoljeno največ 18 preseganj/leto)
+- Letna mejna vrednost: 40 µg/m³ (letno povprečje)
+- Alarmna vrednost: 400 µg/m³ (tri zaporedne ure)
+
+DELCI PM10:
+- Dnevna mejna vrednost: 50 µg/m³ (dovoljeno največ 35 preseganj/leto)
+- Letna mejna vrednost: 40 µg/m³ (letno povprečje)
+
+DELCI PM2.5:
+- Letna mejna vrednost: 20 µg/m³ (letno povprečje)
+
+OZON (O3):
+- Ciljna vrednost: 120 µg/m³ (max dnevno 8-urno povprečje, 25 preseganj v 3 letih)
+- Opozorilna vrednost: 180 µg/m³
+- Alarmna vrednost: 240 µg/m³
+
+ŽVEPLOV DIOKSID (SO2):
+- Urna mejna vrednost: 350 µg/m³
+- Dnevna mejna vrednost: 125 µg/m³
+
+BENZEN:
+- Letna mejna vrednost: 5 µg/m³
+
+SVINEC:
+- Letna mejna vrednost: 500 ng/m³
+
+ARZEN:
+- Letna ciljna vrednost: 6 ng/m³
+
+KADMIJ:
+- Letna ciljna vrednost: 5 ng/m³
+
+NIKELJ:
+- Letna ciljna vrednost: 20 ng/m³
+
+BENZO(A)PIREN:
+- Letna ciljna vrednost: 1 ng/m³

@@ -96,36 +96,27 @@ def rag_search(query: str, top_k: int = 3) -> str:
 # 3. REDIS
 # ============================================================
 
-def redis_latest(station: str, pollutant: str) -> str:
-    """
-    Vrni zadnjo meritev iz Redisa.
-
-    Args:
-        station: ime postaje (npr. "NG_Grčna").
-        pollutant: ime onesnaževala (npr. "no2").
-
-    Returns:
-        JSON string z meritvijo ali napako.
-    """
-    key = f"latest:{station}:{pollutant}"
-    value = _redis.get(key)
+def redis_latest(station: str = None) -> str:
+    """Vrni zadnje meritve iz Redisa."""
+    value = _redis.get("latest_merged_data")
     if value is None:
-        return json.dumps({"error": f"Ni podatka za {key}"})
-    return value
+        return json.dumps({"error": "Ni podatka latest_merged_data"})
+
+    data = json.loads(value)
+
+    if station is None:
+        return json.dumps(data, ensure_ascii=False)
+
+    if station not in data:
+        return json.dumps({"error": f"Ni postaje {station}"})
+
+    return json.dumps(data[station], ensure_ascii=False)
 
 
-def redis_history(period: str) -> str:
-    """
-    Vrni zgodovino iz Redisa.
-
-    Args:
-        period: "hourly", "3hourly", "daily".
-
-    Returns:
-        JSON string z zgodovino ali napako.
-    """
+def redis_history(period: str = "day") -> str:
+    """Vrni zgodovino iz Redisa."""
     key = f"history_payload:{period}"
     value = _redis.get(key)
     if value is None:
-        return json.dumps({"error": f"Ni podatka za {key}"})
+        return json.dumps({"error": f"Ni podatka {key}"})
     return value

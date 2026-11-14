@@ -26,8 +26,9 @@ archive/
 frontend-next/node_modules
 frontend-next/.next
 frontend-next/out
-frontend/node_modules
-frontend/out
+archive/frontend/node_modules
+archive/frontend/out
+
 
 
  

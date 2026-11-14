@@ -1,5 +1,5 @@
 from typing import Optional, List
-from sqlalchemy import Integer, String, Float,DateTime, ForeignKey
+from sqlalchemy import Integer, String, Float, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import declarative_base, relationship, Mapped, mapped_column
 from datetime import datetime
 
@@ -9,6 +9,11 @@ Base = declarative_base()
 
 class DbModelStation(Base):
     __tablename__ = 'stations'
+    # Required by the ON CONFLICT (station_id) clause used in insert_data.
+    # Existing databases must already have an equivalent unique index.
+    __table_args__ = (
+        UniqueConstraint('station_id', name='uq_stations_station_id'),
+    )
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     station_id: Mapped[str] = mapped_column(String(50), nullable=False)
     station_name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -33,6 +38,17 @@ class DbModelPollutant(Base):
 # Each measurement object represents one value for one pollutant, one station and one time
 class DbModelMeasurement(Base):
     __tablename__ = 'measurements'
+    # Required by the ON CONFLICT (station_id, pollutant_id, measured_at)
+    # clause used in insert_data; makes repeated hourly runs idempotent.
+    # Existing databases must already have an equivalent unique index.
+    __table_args__ = (
+        UniqueConstraint(
+            'station_id',
+            'pollutant_id',
+            'measured_at',
+            name='uq_measurements_station_pollutant_time',
+        ),
+    )
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     station_id: Mapped[int] = mapped_column(Integer, ForeignKey('stations.id', ondelete="CASCADE"))
     pollutant_id: Mapped[int] = mapped_column(Integer, ForeignKey('pollutants.id', ondelete="CASCADE"))

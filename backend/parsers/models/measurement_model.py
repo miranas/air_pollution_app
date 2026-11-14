@@ -86,9 +86,9 @@ class ParsedMeasurementModel:
             if not text:
                 return None
             try:
-                # handles values like "<2" 
+                # handles values like "<2" or "<0.5" (below detection limit)
                 if text.strip().startswith("<"):
-                    return float(text.strip()[:1])
+                    return float(text.strip()[1:])
                 return float(text)
             except ValueError:
                 return None

@@ -10,7 +10,7 @@ import logging
 from typing import List
 
 
-from backend.utils.decorators import handle_exceptions, add_timing
+from backend.utils.decorators import add_timing
 from backend.parsers.models.station_models import ParsedStationModel
 from backend.parsers.models.parse_result import ParseResult
 
@@ -18,9 +18,8 @@ from backend.parsers.models.parse_result import ParseResult
 # XML PARSING METHODS
 # ====================================================================
 
-@handle_exceptions
 @add_timing
-def parse_stations_from_xml(xml_content: str) -> ParseResult: 
+def parse_stations_from_xml(xml_content: str) -> ParseResult:
         
     try:
         # STEP 1: INITIAL SETUP AND LOGIC

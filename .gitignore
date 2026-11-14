@@ -14,7 +14,8 @@ __pycache__/
 # IDE
 .idea/
 .proxyai/
-.vscode/
+archive/.vscode/
+docs/.obsidian/
 
 # Tools
 .aider*
@@ -30,3 +31,5 @@ node_modules/
 
 # HF cache
 hf_cache/
+
+

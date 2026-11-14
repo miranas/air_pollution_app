@@ -20,7 +20,22 @@ from backend.utils.serialization import UTF8JsonProvider
 cache: Any = Cache()
 
 
-def create_app() -> Flask:
+def create_app(start_scheduler: bool = True, run_initial_update: bool = True) -> Flask:
+    """
+        Create and configure the Flask application.
+
+        Args:
+            start_scheduler: If True, start BackgroundScheduler that runs
+                update_data() every hour (ARSO XML fetch, DB insert).
+                Set to True in production. Set to False in tests to prevent
+                writing to production DB and depending on ARSO.
+            run_initial_update: If True, run update_data() immediately on startup.
+                Set to True in production (fresh data on start).
+                Set to False in tests to prevent network call and DB writes.
+
+        Returns:
+            Flask: Configured Flask application.
+        """
 
     # Create Flask app
     app = Flask(__name__)
@@ -73,43 +88,53 @@ def create_app() -> Flask:
     except Exception:
         logging.warning("api_latest_bp not available; skipping blueprint registration")
     
-    
-    
+        
     # Set custom JSON provider for the app
     app.json_provider_class = UTF8JsonProvider
-
 
     # Register the after-request handler 
     app.after_request(after_request)
 
     
-    # Start background scheduler for hourly updates    
-    scheduler: Any = BackgroundScheduler()
+    # Start background scheduler for hourly updates
+    if start_scheduler:
+        scheduler: Any = BackgroundScheduler()
 
-    # Ensure scheduled jobs run inside the Flask application context so DB/cache usage is valid
-    def _run_update_data_in_app_context() -> None:
-        try:
-            with app.app_context():
-                update_data()
-        except Exception:
-            logging.exception("Scheduled update_data failed")
+        # Ensure scheduled jobs run inside the Flask application context so DB/cache usage is valid
+        def _run_update_data_in_app_context() -> None:
+            try:
+                with app.app_context():
+                    update_data()
+            except Exception:
+                logging.exception("Scheduled update_data failed")
 
-    scheduler.add_job(func=_run_update_data_in_app_context, trigger='interval', hours=1)
-    scheduler.start()
+        scheduler.add_job(func=_run_update_data_in_app_context, trigger='interval', hours=1)
+        scheduler.start()
 
-    logging.info("Background scheduler started for hourly data updates")
+        logging.info("Background scheduler started for hourly data updates")
 
 
     # Optionally run an initial data update when the app starts
-    with app.app_context():
-        update_data()
+    if run_initial_update:
+        with app.app_context():
+            update_data()
 
     return app # Return the configured app instance
 
 #=======================================================================================
 #============================== main block ===============================================
 
-app = create_app()
+# In tests (conftest.py) we set AIR_POLLUTION_SKIP_STARTUP=1
+# to prevent scheduler and update_data(). In production this variable
+# is not set, so they run normally.
+
+_skip_startup = os.environ.get("AIR_POLLUTION_SKIP_STARTUP", "").lower() in ("1", "true", "yes")
+
+app = create_app(
+    start_scheduler=not _skip_startup,
+    run_initial_update=not _skip_startup,
+)
+
 
 redis_client = app.extensions.get('redis_client')
 print(f"Redis client type: {type(redis_client).__name__ if redis_client is not None else 'None'}")

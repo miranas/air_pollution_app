@@ -1,0 +1,2320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Animated architecture report for the Air Pollution App — ARSO telemetry, PostgreSQL + pgvector, Redis, Flask, LangGraph, and a Next.js dashboard.">
+<title>Air Pollution App — Architecture Report</title>
+<noscript><style>.reveal{opacity:1 !important;transform:none !important}.archflow-hero .afh-zone,.archflow-hero .afh-entity,.archflow-hero .afh-flow{opacity:1 !important}</style></noscript>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+  try {
+    if (localStorage.getItem('archflow-theme') === 'light') document.documentElement.classList.add('light');
+  } catch (e) {}
+</script>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0a0f0d;
+    --bg2: #0f1613;
+    --bg3: #131c18;
+    --surface: #141d19;
+    --surface2: #1a2520;
+    --surface3: #202d27;
+    --recessed: #0a1210;
+    --border: #2a3832;
+    --border2: #3a4a42;
+    --text: #eef4ee;
+    --text-dim: #a9b6ac;
+    --text-muted: #74847a;
+    --accent: #46d8b6;
+    --accent-soft: color-mix(in srgb, var(--accent) 11%, transparent);
+    --accent-line: color-mix(in srgb, var(--accent) 42%, transparent);
+    --accent2: #f0a84e;
+    --accent2-soft: color-mix(in srgb, var(--accent2) 11%, transparent);
+    --accent2-line: color-mix(in srgb, var(--accent2) 42%, transparent);
+    --danger: #e57a65;
+    --shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+    --shadow-mid: 0 12px 34px rgba(0, 0, 0, 0.24);
+    --display: "Fraunces", Georgia, "Times New Roman", serif;
+    --body: "DM Sans", "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+    --afh-bg: #0a0f0d;
+    --afh-zone-fill: #111a16;
+    --afh-zone-stroke: #2f4038;
+    --afh-card: #17231e;
+    --afh-card-active: #1c2e27;
+    --afh-line: #3a4d44;
+    --afh-edge: #75877c;
+    --afh-icon: #263c33;
+    --afh-shadow: #030806;
+    --afh-ink: #eef4ee;
+    --afh-muted: #9fb0a4;
+    --afh-accent: #46d8b6;
+    --afh-accent-2: #f0a84e;
+    --afh-body: var(--body);
+    --afh-mono: var(--mono);
+  }
+
+  html.light {
+    color-scheme: light;
+    --bg: #f6f2e8;
+    --bg2: #efeadd;
+    --bg3: #e9e3d4;
+    --surface: #fffdf7;
+    --surface2: #f8f3e7;
+    --surface3: #f1ebdd;
+    --recessed: #ece6d8;
+    --border: #d9d2c2;
+    --border2: #c4baa6;
+    --text: #1b241f;
+    --text-dim: #4d5b52;
+    --text-muted: #7d897f;
+    --accent: #0b7f6b;
+    --accent-soft: rgba(11, 127, 107, 0.09);
+    --accent-line: rgba(11, 127, 107, 0.38);
+    --accent2: #a45f0a;
+    --accent2-soft: rgba(164, 95, 10, 0.09);
+    --accent2-line: rgba(164, 95, 10, 0.38);
+    --danger: #b4472f;
+    --shadow: 0 24px 70px rgba(61, 55, 42, 0.15);
+    --shadow-mid: 0 12px 34px rgba(61, 55, 42, 0.10);
+    --afh-bg: #f9f6ee;
+    --afh-zone-fill: #efeadd;
+    --afh-zone-stroke: #cbc3b2;
+    --afh-card: #fffdf7;
+    --afh-card-active: #f2fbf7;
+    --afh-line: #c9c2b1;
+    --afh-edge: #75847b;
+    --afh-icon: #deeee7;
+    --afh-shadow: #a69f90;
+    --afh-ink: #1b241f;
+    --afh-muted: #66756b;
+    --afh-accent: #0b7f6b;
+    --afh-accent-2: #a45f0a;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.65;
+    overflow-wrap: break-word;
+    -webkit-font-smoothing: antialiased;
+  }
+  body, html { min-height: 100%; }
+  a { color: var(--accent); }
+  a:hover { color: var(--accent2); }
+  ::selection { background: var(--accent); color: #06120e; }
+  .atmos {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  /* ---------- Theme toggle ---------- */
+  .theme-toggle {
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    z-index: 100;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: var(--shadow-mid);
+    transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  }
+  .theme-toggle:hover { transform: rotate(18deg); border-color: var(--accent); }
+
+  /* ---------- Layout + TOC ---------- */
+  .report-layout {
+    position: relative;
+    display: grid;
+    grid-template-columns: 184px minmax(0, 1fr);
+    gap: 40px;
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 0 28px;
+  }
+  .toc {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
+    padding: 54px 0 30px;
+    z-index: 20;
+  }
+  .toc__inner { display: flex; flex-direction: column; gap: 1px; }
+  .toc__title {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0 0 14px 12px;
+  }
+  .toc__link {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    line-height: 1.4;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 7px 12px;
+    border-left: 2px solid transparent;
+    border-radius: 0 4px 4px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+  }
+  .toc__link:hover { color: var(--text); background: var(--accent-soft); }
+  .toc__link.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-soft); }
+
+  .report-wrap {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+    padding: 48px 0 72px;
+  }
+
+  /* ---------- Section primitives ---------- */
+  section { position: relative; padding: 62px 0; }
+  section + section { border-top: 1px solid var(--border); }
+  .section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+  .section-label::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: blink 2.4s ease-in-out infinite;
+  }
+  h1, h2, h3, h4 { margin: 0; line-height: 1.12; }
+  h2 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(30px, 4vw, 50px);
+    letter-spacing: -0.015em;
+    max-width: 18ch;
+  }
+  h3 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 23px;
+    letter-spacing: -0.01em;
+  }
+  h4 {
+    font-family: var(--body);
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .section-lede {
+    max-width: 68ch;
+    color: var(--text-dim);
+    font-size: 16px;
+    margin: 16px 0 0;
+  }
+  .mono { font-family: var(--mono); }
+  .dim { color: var(--text-dim); }
+  .small { font-size: 13px; }
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 3px 7px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    color: var(--text-dim);
+    background: var(--surface2);
+    white-space: nowrap;
+  }
+  .tag--accent { color: var(--accent); border-color: var(--accent-line); background: var(--accent-soft); }
+  .tag--amber { color: var(--accent2); border-color: var(--accent2-line); background: var(--accent2-soft); }
+  .tag--danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); background: color-mix(in srgb, var(--danger) 10%, transparent); }
+
+  /* ---------- Header ---------- */
+  #overview {
+    padding-top: 18px;
+    padding-bottom: 54px;
+    background:
+      radial-gradient(ellipse 60% 55% at 12% 0%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 68%),
+      radial-gradient(ellipse 50% 60% at 96% 22%, color-mix(in srgb, var(--accent2) 10%, transparent), transparent 70%),
+      linear-gradient(160deg, var(--bg) 0%, var(--bg2) 60%, var(--bg) 100%);
+    overflow: hidden;
+  }
+  #overview .grain {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.32;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.16'/%3E%3C/svg%3E");
+    mix-blend-mode: overlay;
+  }
+  #overview .dotgrid {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: radial-gradient(color-mix(in srgb, var(--accent) 18%, transparent) 1px, transparent 1px);
+    background-size: 26px 26px;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent 72%);
+    opacity: 0.5;
+  }
+  .hero-head { position: relative; z-index: 1; padding-top: 42px; }
+  .kicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 26px;
+  }
+  .kicker .live {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--accent);
+  }
+  .kicker .live::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent);
+    animation: blink 1.9s ease-in-out infinite;
+  }
+  h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(58px, 10.5vw, 148px);
+    letter-spacing: -0.035em;
+    line-height: 0.95;
+    max-width: 12ch;
+  }
+  h1 em {
+    font-style: normal;
+    color: var(--accent);
+  }
+  .hero-lede {
+    max-width: 62ch;
+    margin: 28px 0 0;
+    font-size: clamp(16px, 1.8vw, 20px);
+    line-height: 1.6;
+    color: var(--text-dim);
+  }
+  .hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 28px;
+  }
+  .hero-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 26px;
+    margin-top: 38px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .hero-pill { display: flex; flex-direction: column; gap: 2px; }
+  .hero-pill strong {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 30px;
+    line-height: 1;
+    color: var(--text);
+  }
+  .hero-pill span {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* ---------- Executive summary ---------- */
+  #summary {
+    background:
+      linear-gradient(105deg, transparent 0 58%, color-mix(in srgb, var(--accent) 4%, transparent) 58% 100%),
+      radial-gradient(ellipse 50% 80% at 92% 100%, color-mix(in srgb, var(--accent2) 7%, transparent), transparent 70%),
+      var(--bg);
+  }
+  .exec-card {
+    position: relative;
+    margin-top: 30px;
+    padding: 38px 42px 38px 46px;
+    background: linear-gradient(150deg, var(--surface2), var(--surface));
+    border: 1px solid var(--border2);
+    border-left: 3px solid var(--accent);
+    border-radius: 2px 16px 16px 2px;
+    box-shadow: var(--shadow);
+  }
+  .exec-card .tag { margin-bottom: 18px; }
+  .exec-card p {
+    margin: 0 0 18px;
+    font-size: 17.5px;
+    line-height: 1.68;
+    color: var(--text-dim);
+    max-width: 74ch;
+  }
+  .exec-card p:last-child { margin-bottom: 0; }
+  .exec-card strong { color: var(--text); font-weight: 600; }
+  .exec-card .pull {
+    font-family: var(--display);
+    font-size: 24px;
+    line-height: 1.4;
+    color: var(--text);
+    font-style: italic;
+  }
+  .seam-callout {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin-top: 24px;
+    padding: 16px 18px;
+    background: var(--accent2-soft);
+    border: 1px solid var(--accent2-line);
+    border-radius: 10px;
+    font-size: 14px;
+    color: var(--text-dim);
+  }
+  .seam-callout strong { color: var(--accent2); }
+
+  /* ---------- Metrics ---------- */
+  #metrics {
+    padding: 0;
+    background:
+      radial-gradient(ellipse 70% 130% at 100% 50%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%),
+      linear-gradient(90deg, var(--bg2), var(--bg));
+  }
+  .metric-strip {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    width: 100%;
+  }
+  .metric-cell {
+    padding: 38px 22px;
+    border-right: 1px solid var(--border);
+    min-width: 0;
+  }
+  .metric-cell:first-child { padding-left: 0; }
+  .metric-cell:last-child { border-right: 0; }
+  .metric-num {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(30px, 3.6vw, 46px);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .metric-num em { font-style: normal; color: var(--accent); }
+  .metric-label {
+    display: block;
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 9px;
+    line-height: 1.5;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* ---------- Diagram ---------- */
+  #architecture {
+    background:
+      radial-gradient(ellipse 65% 55% at 50% 34%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 72%),
+      radial-gradient(ellipse 40% 40% at 8% 92%, color-mix(in srgb, var(--accent2) 5%, transparent), transparent 72%),
+      linear-gradient(180deg, var(--bg2), var(--bg));
+  }
+  .diagram-shell {
+    margin-top: 30px;
+    border: 1px solid var(--border2);
+    border-radius: 18px;
+    background:
+      linear-gradient(var(--afh-bg), var(--afh-bg)) padding-box,
+      radial-gradient(circle at 30% 20%, var(--accent-line), transparent 60%) border-box;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .chapter-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 16px 18px 0;
+    align-items: center;
+  }
+  .chapter-btn {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    padding: 7px 11px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+  }
+  .chapter-btn:hover { color: var(--text); border-color: var(--border2); }
+  .chapter-btn.active {
+    color: var(--accent);
+    border-color: var(--accent-line);
+    background: var(--accent-soft);
+  }
+  .chapter-btn .num { opacity: 0.55; margin-right: 5px; }
+  .hero-canvas {
+    padding: 18px 14px 4px;
+    overflow-x: auto;
+  }
+  .hero-canvas svg.archflow-hero { min-width: 1060px; }
+  .hero-canvas #afh-arrow path { fill: var(--afh-edge); }
+  .phase-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    justify-content: space-between;
+    margin: 0 18px 18px;
+    padding: 13px 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+  .phase-banner {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.6;
+    color: var(--accent);
+    min-width: 0;
+    flex: 1 1 540px;
+  }
+  .phase-controls { display: flex; gap: 6px; flex-shrink: 0; }
+  .phase-controls button {
+    width: 32px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .phase-controls button:hover { color: var(--accent); border-color: var(--accent-line); }
+  .diagram-notes {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 18px;
+  }
+  .diagram-note {
+    padding: 15px 17px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .diagram-note:nth-child(2) strong { color: var(--accent); }
+  .diagram-note:nth-child(3) strong { color: var(--text-dim); }
+  .diagram-note strong {
+    display: block;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 5px;
+  }
+
+  /* ---------- Component table ---------- */
+  #components {
+    background:
+      radial-gradient(ellipse 45% 60% at 0% 40%, color-mix(in srgb, var(--accent2) 6%, transparent), transparent 72%),
+      repeating-linear-gradient(90deg, transparent 0 79px, color-mix(in srgb, var(--accent) 2%, transparent) 79px 80px),
+      var(--bg);
+  }
+  .ledger {
+    margin-top: 30px;
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    background: var(--recessed);
+    box-shadow: inset 0 1px 4px rgba(0,0,0,0.35);
+    overflow: hidden;
+  }
+  .table-scroll { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    min-width: 720px;
+  }
+  thead th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border2);
+    background: var(--surface);
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+    vertical-align: top;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover td { background: var(--accent-soft); color: var(--text); }
+  tbody td:first-child { white-space: nowrap; }
+  tbody td code, .path {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text);
+    background: transparent;
+  }
+  .path { color: var(--text-muted); word-break: break-all; }
+
+  /* ---------- Split flow ---------- */
+  #dataflow {
+    background:
+      linear-gradient(100deg, color-mix(in srgb, var(--accent) 6%, transparent) 0 49.6%, transparent 49.6% 50.4%, color-mix(in srgb, var(--accent2) 6%, transparent) 50.4% 100%),
+      var(--bg2);
+  }
+  .plane-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-top: 30px;
+  }
+  .plane {
+    padding: 28px 28px 30px;
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: var(--shadow-mid);
+  }
+  .plane--telemetry { border-top: 3px solid var(--accent); background: linear-gradient(180deg, var(--accent-soft), transparent 120px), var(--surface); }
+  .plane--ai { border-top: 3px solid var(--accent2); background: linear-gradient(180deg, var(--accent2-soft), transparent 120px), var(--surface); }
+  .plane-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .plane-head h3 { font-size: 25px; }
+  .plane-head .tag { flex-shrink: 0; }
+  .plane-sub { margin: 8px 0 20px; font-size: 13.5px; color: var(--text-muted); }
+  .plane-step {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+  }
+  .plane-step:first-of-type { border-top: 0; }
+  .step-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    padding-top: 3px;
+  }
+  .plane--ai .step-num { color: var(--accent2); }
+  .plane-step strong {
+    display: block;
+    font-size: 14px;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .plane-step p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--text-dim); }
+  .plane-step code {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 4px;
+  }
+  .shared-state {
+    margin-top: 18px;
+    padding: 14px 18px;
+    border: 1px dashed var(--accent-line);
+    border-radius: 10px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    text-align: center;
+    background: var(--accent-soft);
+  }
+  .shared-state strong { color: var(--accent); }
+
+  /* ---------- Storage ---------- */
+  #storage {
+    background:
+      radial-gradient(ellipse 60% 60% at 100% 0%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 70%),
+      radial-gradient(color-mix(in srgb, var(--accent2) 10%, transparent) 1px, transparent 1px),
+      var(--bg);
+    background-size: auto, 22px 22px, auto;
+  }
+  .schema-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 30px;
+  }
+  .schema-card {
+    padding: 18px 18px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    min-width: 0;
+  }
+  .schema-card h4 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+  .schema-card h4 span { font-size: 8.5px; color: var(--accent2); letter-spacing: 0.1em; }
+  .schema-card:nth-child(3n+1) { border-top: 2px solid var(--accent-line); }
+  .schema-card:nth-child(3n+2) { border-top: 2px solid var(--accent2-line); }
+  .schema-card:nth-child(3n+1) h4 span { color: var(--accent); }
+  .schema-card ul { margin: 0; padding: 0; list-style: none; }
+  .schema-card li {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    line-height: 1.8;
+    color: var(--text-dim);
+    border-bottom: 1px dotted var(--border);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .schema-card li:last-child { border-bottom: 0; }
+  .schema-card li b { color: var(--text); font-weight: 500; }
+  .schema-card .note { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
+  .storage-lower {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 18px;
+    margin-top: 18px;
+  }
+  .terminal {
+    background: var(--recessed);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 6px rgba(0,0,0,0.4);
+  }
+  .terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .terminal-bar i { width: 8px; height: 8px; border-radius: 50%; background: var(--border2); }
+  .terminal-bar i:nth-child(1) { background: var(--danger); }
+  .terminal-bar i:nth-child(2) { background: var(--accent2); }
+  .terminal-bar i:nth-child(3) { background: var(--accent); }
+  .terminal-bar span {
+    margin-left: 8px;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .terminal pre {
+    margin: 0;
+    padding: 18px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.75;
+    color: var(--text-dim);
+    overflow-x: auto;
+  }
+  .terminal pre b { color: var(--accent); font-weight: 500; }
+  .terminal pre em { color: var(--accent2); font-style: normal; }
+  .fallback-card {
+    padding: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .fallback-card h4 { margin-bottom: 14px; }
+  .chain { display: flex; flex-direction: column; gap: 0; }
+  .chain-node {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface2);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text-dim);
+  }
+  .chain-node b { color: var(--text); font-weight: 500; }
+  .chain-node.final { border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent); }
+  .chain-arrow {
+    height: 20px;
+    width: 1px;
+    margin-left: 22px;
+    background: var(--border2);
+    position: relative;
+  }
+  .chain-arrow::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: -3px;
+    border-left: 3.5px solid transparent;
+    border-right: 3.5px solid transparent;
+    border-top: 5px solid var(--border2);
+  }
+
+  /* ---------- AI routing ---------- */
+  #ai {
+    background:
+      radial-gradient(ellipse 55% 55% at 50% 0%, color-mix(in srgb, var(--accent2) 9%, transparent), transparent 72%),
+      linear-gradient(180deg, var(--bg2), var(--bg));
+  }
+  .route-map {
+    margin-top: 30px;
+    padding: 26px;
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: var(--shadow-mid);
+  }
+  .route-row {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr) 150px;
+    gap: 18px;
+    align-items: start;
+    padding: 16px 0;
+    border-top: 1px solid var(--border);
+  }
+  .route-row:first-child { border-top: 0; padding-top: 0; }
+  .route-name {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent2);
+    letter-spacing: 0.04em;
+  }
+  .route-name span {
+    display: block;
+    margin-top: 4px;
+    font-size: 8.5px;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .route-body { font-size: 13.5px; color: var(--text-dim); }
+  .route-body strong { color: var(--text); font-weight: 600; }
+  .route-body code, .route-tool code {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 4px;
+  }
+  .route-tool {
+    font-family: var(--mono);
+    font-size: 10px;
+    line-height: 1.8;
+    color: var(--text-muted);
+    text-align: right;
+  }
+  .route-tool code { display: inline-block; margin-bottom: 2px; }
+  .legacy-note {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+    margin-top: 18px;
+    padding: 18px 20px;
+    border: 1px dashed var(--border2);
+    border-radius: 12px;
+    background: var(--surface2);
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .legacy-note h4 { color: var(--text); }
+  .legacy-note p { margin: 5px 0 0; }
+  .legacy-note .tag { margin-top: 2px; }
+
+  /* ---------- Services ---------- */
+  #services {
+    background:
+      radial-gradient(ellipse 40% 60% at 6% 10%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%),
+      radial-gradient(ellipse 45% 55% at 94% 86%, color-mix(in srgb, var(--accent2) 8%, transparent), transparent 70%),
+      var(--bg2);
+  }
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 30px;
+  }
+  .service-card {
+    position: relative;
+    padding: 20px 20px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--border2);
+    border-radius: 10px;
+    min-width: 0;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+  .service-card:hover { transform: translateY(-2px); border-top-color: var(--accent); }
+  .service-card[data-tone="amber"]:hover { border-top-color: var(--accent2); }
+  .service-card[data-tone="accent"] { border-top-color: var(--accent-line); }
+  .service-card[data-tone="amber"] { border-top-color: var(--accent2-line); }
+  .service-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .service-head h4 { font-size: 15px; }
+  .service-card p { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--text-dim); }
+  .service-meta {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px dotted var(--border);
+    font-family: var(--mono);
+    font-size: 9.5px;
+    line-height: 1.7;
+    color: var(--text-muted);
+    word-break: break-word;
+  }
+
+  /* ---------- Deployment ---------- */
+  #deploy {
+    background:
+      repeating-linear-gradient(0deg, transparent 0 31px, color-mix(in srgb, var(--accent) 3%, transparent) 31px 32px),
+      linear-gradient(120deg, var(--bg), var(--bg2));
+  }
+  .timeline {
+    margin-top: 30px;
+    border-left: 1px solid var(--border2);
+    padding-left: 0;
+  }
+  .timeline-step {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 18px;
+    position: relative;
+    padding: 0 0 26px 0;
+  }
+  .timeline-step:last-child { padding-bottom: 0; }
+  .timeline-step::before {
+    content: "";
+    position: absolute;
+    left: -4.5px;
+    top: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--accent-line);
+  }
+  .timeline-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent2);
+    text-align: right;
+    padding-top: 2px;
+  }
+  .timeline-body h4 { margin-bottom: 4px; }
+  .timeline-body p { margin: 0; font-size: 13.5px; color: var(--text-dim); }
+  .timeline-body code {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 4px;
+  }
+  .deploy-warning {
+    margin-top: 22px;
+    padding: 16px 18px;
+    border: 1px solid color-mix(in srgb, var(--danger) 42%, transparent);
+    background: color-mix(in srgb, var(--danger) 8%, transparent);
+    border-radius: 10px;
+    font-size: 13.5px;
+    color: var(--text-dim);
+  }
+  .deploy-warning strong { color: var(--danger); }
+
+  /* ---------- Insights ---------- */
+  #insights {
+    background:
+      radial-gradient(ellipse 50% 60% at 88% 8%, color-mix(in srgb, var(--accent2) 8%, transparent), transparent 70%),
+      linear-gradient(160deg, var(--bg2) 0%, var(--bg) 80%);
+  }
+  .insights-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 30px;
+  }
+  .insight-card {
+    padding: 22px 22px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    min-width: 0;
+  }
+  .insight-card--wide {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr) 200px;
+    gap: 18px;
+    align-items: start;
+    padding: 26px 26px 24px;
+    background: linear-gradient(130deg, var(--surface3), var(--surface));
+    border-left: 3px solid var(--accent2);
+    box-shadow: var(--shadow-mid);
+  }
+  .insight-index {
+    font-family: var(--display);
+    font-size: 34px;
+    line-height: 1;
+    color: var(--accent2);
+    opacity: 0.8;
+  }
+  .insight-card h4 { margin-bottom: 7px; font-size: 15.5px; }
+  .insight-card p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--text-dim); }
+  .insight-card p + p { margin-top: 8px; }
+  .insight-card code {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 4px;
+  }
+  .insight-side {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    line-height: 1.8;
+    color: var(--text-muted);
+    border-left: 1px dotted var(--border2);
+    padding-left: 16px;
+  }
+  .insight-side b { display: block; color: var(--accent); font-weight: 500; margin-bottom: 2px; }
+
+  /* ---------- References ---------- */
+  #references {
+    background:
+      radial-gradient(ellipse 55% 50% at 12% 100%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 70%),
+      var(--bg2);
+  }
+  .refs {
+    margin-top: 26px;
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    background: var(--recessed);
+    overflow: hidden;
+  }
+  .refs details { border-bottom: 1px solid var(--border); }
+  .refs details:last-child { border-bottom: 0; }
+  .refs summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 15px 18px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .refs summary::-webkit-details-marker { display: none; }
+  .refs summary::before {
+    content: "+";
+    color: var(--accent);
+    font-size: 14px;
+    width: 12px;
+  }
+  .refs details[open] summary::before { content: "−"; }
+  .refs summary:hover { color: var(--text); background: var(--accent-soft); }
+  .ref-list { padding: 0 18px 16px 40px; }
+  .ref-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr);
+    gap: 14px;
+    padding: 6px 0;
+    font-size: 12.5px;
+    border-top: 1px dotted var(--border);
+  }
+  .ref-row:first-child { border-top: 0; }
+  .ref-row code {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    word-break: break-all;
+  }
+  .ref-row span { color: var(--text-muted); }
+
+  footer {
+    padding: 34px 0 10px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 9.5px;
+    line-height: 1.9;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 28px;
+    justify-content: space-between;
+  }
+
+  /* ---------- Scroll reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(34px); transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.28; }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0.15; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .hero-head > * { animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .hero-head > *:nth-child(2) { animation-delay: 0.08s; }
+  .hero-head > *:nth-child(3) { animation-delay: 0.16s; }
+  .hero-head > *:nth-child(4) { animation-delay: 0.24s; }
+  .hero-head > *:nth-child(5) { animation-delay: 0.32s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    .reveal { opacity: 1; transform: none; }
+  }
+
+  @media (max-width: 1120px) {
+    .metric-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .metric-cell:nth-child(3) { border-right: 0; }
+    .metric-cell:nth-child(-n+3) { border-bottom: 1px solid var(--border); }
+    .schema-grid, .services-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .insight-card--wide { grid-template-columns: 48px minmax(0, 1fr); }
+    .insight-side { grid-column: 1 / -1; border-left: 0; border-top: 1px dotted var(--border2); padding: 10px 0 0; }
+  }
+
+  @media (max-width: 1000px) {
+    .report-layout { grid-template-columns: 1fr; gap: 0; padding: 0; }
+    .toc {
+      position: sticky;
+      top: 0;
+      max-height: none;
+      padding: 0;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      overflow: visible;
+    }
+    .toc__inner { flex-direction: row; overflow-x: auto; padding: 0 16px; }
+    .toc__title { display: none; }
+    .toc__link { border-left: 0; border-bottom: 2px solid transparent; padding: 12px 13px; flex-shrink: 0; }
+    .toc__link.active { border-bottom-color: var(--accent); }
+    .report-wrap { padding: 20px 18px 48px; }
+    .plane-split, .storage-lower, .insight-card--wide { grid-template-columns: 1fr; }
+    .route-row { grid-template-columns: 90px minmax(0, 1fr); }
+    .route-tool { grid-column: 1 / -1; text-align: left; }
+    .phase-controls { display: none; }
+  }
+
+  @media (max-width: 680px) {
+    section { padding: 44px 0; }
+    .exec-card { padding: 26px 22px; }
+    .metric-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .metric-cell { padding: 24px 16px; }
+    .metric-cell:nth-child(3) { border-right: 1px solid var(--border); }
+    .metric-cell:nth-child(2n) { border-right: 0; }
+    .metric-cell:nth-child(-n+4) { border-bottom: 1px solid var(--border); }
+    .schema-grid, .services-grid, .diagram-notes, .insights-grid { grid-template-columns: 1fr; }
+    .diagram-notes { grid-template-columns: 1fr; }
+    .ref-row { grid-template-columns: 1fr; gap: 2px; }
+    .hero-pills { gap: 18px; }
+  }
+
+  /* ---------- Print ---------- */
+  @media print {
+    @page { size: A4; margin: 14mm 12mm; }
+    @page landscape { size: A4 landscape; margin: 10mm; }
+    #architecture { page: landscape; break-before: page; break-after: page; }
+    :root, html.light {
+      --bg: #ffffff;
+      --bg2: #fbfaf6;
+      --bg3: #f5f3ec;
+      --surface: #ffffff;
+      --surface2: #f7f5ef;
+      --surface3: #f1eee6;
+      --recessed: #f4f1e9;
+      --border: #d8d2c4;
+      --border2: #c4bcaa;
+      --text: #18201b;
+      --text-dim: #45524a;
+      --text-muted: #75817a;
+      --accent: #0b6f5e;
+      --accent2: #8f5409;
+      --afh-bg: #ffffff;
+      --afh-zone-fill: #f5f2ea;
+      --afh-zone-stroke: #c8c0ae;
+      --afh-card: #ffffff;
+      --afh-card-active: #eefaf5;
+      --afh-line: #bdb5a5;
+      --afh-edge: #6b7a72;
+      --afh-icon: #e2f0ea;
+      --afh-shadow: #cfc8b9;
+      --afh-ink: #18201b;
+      --afh-muted: #5d6b62;
+      --afh-accent: #0b6f5e;
+      --afh-accent-2: #8f5409;
+    }
+    html, body {
+      background: #fff !important;
+      color: var(--text);
+      font-size: 10pt;
+    }
+    .atmos, .grain, .dotgrid, .theme-toggle, .toc, .chapter-nav, .phase-controls {
+      display: none !important;
+    }
+    .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+    .report-layout { display: block; max-width: none; padding: 0; }
+    .report-wrap { padding: 0; }
+    section {
+      padding: 20pt 0;
+      overflow: visible !important;
+      break-inside: auto;
+      background: none !important;
+    }
+    section + section { border-top: 1px solid #d8d2c4; }
+    #overview { padding-top: 0; }
+    #metrics { padding: 0; }
+    h1 { font-size: 38pt; line-height: 1; }
+    h2 { font-size: 21pt; }
+    h3 { font-size: 14pt; }
+    .hero-lede { font-size: 11pt; }
+    .metric-num { font-size: 24pt; }
+    .metric-label, .tag, .ref-row code, .path { font-size: 7.5pt; }
+    .exec-card, .diagram-shell, .ledger, .plane, .schema-card, .terminal, .fallback-card,
+    .route-map, .service-card, .insight-card, .refs, .shared-state, .deploy-warning,
+    .metric-cell, .diagram-note, .seam-callout {
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+      box-shadow: none !important;
+      break-inside: avoid;
+    }
+    .hero-canvas { overflow: visible !important; padding: 6pt 0; }
+    .hero-canvas svg.archflow-hero { min-width: 0 !important; width: 100% !important; }
+    .phase-bar { display: block; border: 0; padding: 4pt 0 0; background: none; margin: 0; }
+    .phase-banner { font-size: 8pt; color: var(--text-dim); }
+    .plane-split, .storage-lower, .schema-grid, .services-grid, .insights-grid, .diagram-notes {
+      gap: 8pt;
+    }
+    .plane-split { grid-template-columns: 1fr 1fr; }
+    .schema-grid, .services-grid { grid-template-columns: repeat(3, 1fr); }
+    .route-row { break-inside: avoid; }
+    .timeline-step { break-inside: avoid; }
+    thead { break-inside: avoid; }
+    tr { break-inside: avoid; }
+    table { break-inside: auto; font-size: 8.5pt; }
+    .ledger { break-inside: auto; }
+    h2, h3, h4 { break-after: avoid; }
+    a { color: var(--text); text-decoration: none; }
+    a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 7pt; color: var(--text-muted); }
+    footer { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle color theme" title="Toggle theme">◐</button>
+
+<div class="report-layout">
+  <nav class="toc" aria-label="Table of contents">
+    <div class="toc__inner">
+      <div class="toc__title">Contents</div>
+      <a class="toc__link active" href="#overview">Overview</a>
+      <a class="toc__link" href="#summary">Executive summary</a>
+      <a class="toc__link" href="#metrics">Metrics</a>
+      <a class="toc__link" href="#architecture">Architecture flow</a>
+      <a class="toc__link" href="#components">Component directory</a>
+      <a class="toc__link" href="#dataflow">Data flow</a>
+      <a class="toc__link" href="#storage">State layer</a>
+      <a class="toc__link" href="#ai">Agent routing</a>
+      <a class="toc__link" href="#services">External services</a>
+      <a class="toc__link" href="#deploy">Delivery pipeline</a>
+      <a class="toc__link" href="#insights">Insights</a>
+      <a class="toc__link" href="#references">Code references</a>
+    </div>
+  </nav>
+
+  <div class="report-wrap">
+
+    <!-- ============ HEADER ============ -->
+    <section id="overview">
+      <div class="grain" aria-hidden="true"></div>
+      <div class="dotgrid" aria-hidden="true"></div>
+      <div class="hero-head">
+        <div class="kicker">
+          <span class="live">Architecture report</span>
+          <span>22 Oct 2026</span>
+          <span>Branch · main</span>
+          <span>Ljubljana, SI</span>
+        </div>
+        <h1>Air <em>Pollution</em><br>App</h1>
+        <p class="hero-lede">A Slovenian air-quality system that fuses official ARSO telemetry with environmental law documents, serves a live dashboard, and answers natural-language questions through a LangGraph retrieval and analysis agent.</p>
+        <div class="hero-meta">
+          <span class="tag tag--accent">Python 3.14</span>
+          <span class="tag tag--accent">Flask + LangGraph</span>
+          <span class="tag tag--amber">PostgreSQL 17 / pgvector</span>
+          <span class="tag tag--amber">Redis 7.2</span>
+          <span class="tag">Next.js 16 · static export</span>
+          <span class="tag">Docker · GHCR · Hetzner</span>
+        </div>
+        <div class="hero-pills">
+          <div class="hero-pill"><strong>445k+</strong><span>measurement rows</span></div>
+          <div class="hero-pill"><strong>8</strong><span>pollutants tracked</span></div>
+          <div class="hero-pill"><strong>2</strong><span>runtime planes</span></div>
+          <div class="hero-pill"><strong>1 h</strong><span>telemetry cycle</span></div>
+          <div class="hero-pill"><strong>10</strong><span>hero components</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ EXECUTIVE SUMMARY ============ -->
+    <section id="summary" class="reveal">
+      <div class="section-label">Executive summary</div>
+      <h2>Two runtimes, one state layer</h2>
+      <div class="exec-card">
+        <span class="tag tag--accent">System character</span>
+        <p>The repository is organised around <strong>two independent runtimes that share the same storage</strong>. A Flask service owns the telemetry plane: an APScheduler job runs every hour, pulls the official ARSO XML feed, parses stations and measurements, merges them into a station-keyed payload, writes the hot copy to Redis, upserts the relational rows into PostgreSQL, and rebuilds four history payloads. The Next.js dashboard is a static export behind nginx and reads that data through two REST endpoints.</p>
+        <p>The second runtime is a <strong>LangGraph question-answering graph</strong>. A router classifies each question into <code>rag</code>, <code>sql</code>, <code>redis</code>, or <code>splosno</code>; one of four source nodes gathers evidence from pgvector, PostgreSQL, or the Redis cache; and an answer node composes a grounded Slovenian response through the DeepSeek API. Document ingestion is a separate, watcher-driven indexing path that chunks PDFs and text files and embeds them into pgvector through Ollama.</p>
+        <p class="pull">The state layer is the contract between the two planes: measurements for the dashboard, measurements plus document vectors for the agent.</p>
+        <div class="seam-callout">
+          <span class="tag tag--danger">Open seam</span>
+          <div><strong>The AI plane stops at the CLI.</strong> Flask exposes <code>/api/latest</code>, <code>/api/history</code>, and <code>/api/status</code> — but no question endpoint. Nginx already reserves a slow-lane proxy for <code>/api/(vprasanje|rag|agent|ask|query)</code>. Wiring the LangGraph graph into that route is the single highest-leverage integration step.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ METRICS ============ -->
+    <section id="metrics" class="reveal" aria-label="Key metrics">
+      <div class="metric-strip">
+        <div class="metric-cell"><div class="metric-num">1<em>h</em></div><span class="metric-label">ARSO refresh interval</span></div>
+        <div class="metric-cell"><div class="metric-num">8</div><span class="metric-label">Pollutants tracked</span></div>
+        <div class="metric-cell"><div class="metric-num">4</div><span class="metric-label">LangGraph routes</span></div>
+        <div class="metric-cell"><div class="metric-num">1,500</div><span class="metric-label">Chars per RAG chunk</span></div>
+        <div class="metric-cell"><div class="metric-num">120</div><span class="metric-label">History req / min / IP</span></div>
+        <div class="metric-cell"><div class="metric-num">8</div><span class="metric-label">Compose services</span></div>
+      </div>
+    </section>
+
+    <!-- ============ HERO DIAGRAM ============ -->
+    <section id="architecture" class="reveal">
+      <div class="section-label">01 · System map</div>
+      <h2>From XML to answer</h2>
+      <p class="section-lede">Five groups, five narrative chapters. The telemetry spine runs left to right; the question-answering plane branches off the same PostgreSQL and Redis state layer. Use the chapter pills to step through the system, or let it play.</p>
+
+      <div class="diagram-shell">
+        <div class="chapter-nav" id="chapterNav" role="group" aria-label="Diagram chapters">
+          <button type="button" class="chapter-btn active" data-chapter="0" aria-pressed="true"><span class="num">01</span>Collect signals</button>
+          <button type="button" class="chapter-btn" data-chapter="1" aria-pressed="false"><span class="num">02</span>Persist &amp; index</button>
+          <button type="button" class="chapter-btn" data-chapter="2" aria-pressed="false"><span class="num">03</span>Serve live readings</button>
+          <button type="button" class="chapter-btn" data-chapter="3" aria-pressed="false"><span class="num">04</span>Reason over questions</button>
+          <button type="button" class="chapter-btn" data-chapter="4" aria-pressed="false"><span class="num">05</span>Complete system</button>
+        </div>
+        <div class="hero-canvas">
+          <svg class="archflow-hero" data-archflow-hero="1" viewBox="0 0 1680 700" role="img" aria-labelledby="afh-title afh-description" xmlns="http://www.w3.org/2000/svg"><title id="afh-title">Air Pollution App</title><desc id="afh-description">Hourly ARSO telemetry and document evidence meet in one state layer, then split into a live dashboard and a LangGraph question-answering plane</desc><metadata id="afh-chapters">[{&quot;id&quot;:&quot;chapter-collect&quot;,&quot;label&quot;:&quot;01 · Collect signals&quot;,&quot;color&quot;:&quot;mint&quot;,&quot;zones&quot;:[&quot;zone-sources&quot;,&quot;zone-ingest&quot;],&quot;entities&quot;:[&quot;arso&quot;,&quot;docs&quot;,&quot;ingest&quot;,&quot;indexer&quot;],&quot;flows&quot;:[&quot;arso-ingest&quot;,&quot;docs-indexer&quot;]},{&quot;id&quot;:&quot;chapter-persist&quot;,&quot;label&quot;:&quot;02 · Persist &amp; index&quot;,&quot;color&quot;:&quot;amber&quot;,&quot;zones&quot;:[&quot;zone-ingest&quot;,&quot;zone-state&quot;],&quot;entities&quot;:[&quot;ingest&quot;,&quot;indexer&quot;,&quot;state&quot;],&quot;flows&quot;:[&quot;ingest-state&quot;,&quot;indexer-state&quot;]},{&quot;id&quot;:&quot;chapter-serve&quot;,&quot;label&quot;:&quot;03 · Serve live readings&quot;,&quot;color&quot;:&quot;blue&quot;,&quot;zones&quot;:[&quot;zone-state&quot;,&quot;zone-serve&quot;,&quot;zone-clients&quot;],&quot;entities&quot;:[&quot;state&quot;,&quot;flask&quot;,&quot;ui&quot;],&quot;flows&quot;:[&quot;state-flask&quot;,&quot;flask-ui&quot;]},{&quot;id&quot;:&quot;chapter-reason&quot;,&quot;label&quot;:&quot;04 · Reason over questions&quot;,&quot;color&quot;:&quot;violet&quot;,&quot;zones&quot;:[&quot;zone-state&quot;,&quot;zone-serve&quot;,&quot;zone-clients&quot;],&quot;entities&quot;:[&quot;state&quot;,&quot;graph&quot;,&quot;answer&quot;,&quot;cli&quot;],&quot;flows&quot;:[&quot;state-graph&quot;,&quot;cli-graph&quot;,&quot;graph-answer&quot;,&quot;answer-cli&quot;]},{&quot;id&quot;:&quot;chapter-system&quot;,&quot;label&quot;:&quot;05 · Complete system&quot;,&quot;color&quot;:&quot;white&quot;,&quot;zones&quot;:[&quot;zone-sources&quot;,&quot;zone-ingest&quot;,&quot;zone-state&quot;,&quot;zone-serve&quot;,&quot;zone-clients&quot;],&quot;entities&quot;:[&quot;arso&quot;,&quot;docs&quot;,&quot;ingest&quot;,&quot;indexer&quot;,&quot;state&quot;,&quot;flask&quot;,&quot;graph&quot;,&quot;answer&quot;,&quot;ui&quot;,&quot;cli&quot;],&quot;flows&quot;:[&quot;arso-ingest&quot;,&quot;docs-indexer&quot;,&quot;ingest-state&quot;,&quot;indexer-state&quot;,&quot;state-flask&quot;,&quot;state-graph&quot;,&quot;flask-ui&quot;,&quot;cli-graph&quot;,&quot;graph-answer&quot;,&quot;answer-cli&quot;]}]</metadata><defs><marker id="afh-arrow" markerUnits="userSpaceOnUse" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"/></marker><filter id="afh-soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6"/></filter></defs><style>.archflow-hero{width:100%;height:auto;display:block;overflow:visible}.afh-zone{opacity:.76;transition:opacity .35s ease}.afh-zone-frame{fill:var(--afh-zone-fill,#121b2f);stroke:var(--afh-zone-stroke,#2b3a59);stroke-width:1}.afh-zone-title{fill:var(--afh-muted,#8290aa);font:600 11px var(--afh-mono,ui-monospace,monospace);letter-spacing:.12em;text-transform:uppercase}.afh-entity{opacity:.46;transition:opacity .3s ease,filter .3s ease}.afh-entity-shadow{fill:var(--afh-shadow,#050810);opacity:.44;filter:url(#afh-soft)}.afh-entity-frame{fill:var(--afh-card,#172137);stroke:var(--afh-line,#33425f);stroke-width:1.2;transition:stroke .3s ease,fill .3s ease}.afh-icon rect{fill:var(--afh-icon,#24334f)}.afh-icon text{fill:var(--afh-accent,#5eead4);font:700 8px var(--afh-mono,ui-monospace,monospace);letter-spacing:.05em}.afh-entity-title{fill:var(--afh-ink,#edf4ff);font:650 12px var(--afh-body,system-ui,sans-serif)}.afh-entity-caption{fill:var(--afh-muted,#95a4bd);font:500 9.5px var(--afh-body,system-ui,sans-serif)}.afh-tag{paint-order:stroke;stroke:var(--afh-bg,#08101f);stroke-width:5;stroke-linejoin:round;fill:var(--afh-accent-2,#f4b860);font:700 8px var(--afh-mono,ui-monospace,monospace);letter-spacing:.08em}.afh-flow{opacity:.22;transition:opacity .3s ease}.afh-flow-halo{fill:none;stroke:var(--afh-bg,#08101f);stroke-width:7;stroke-linejoin:round}.afh-flow-path{fill:none;stroke:var(--afh-edge,#6d7f9f);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.afh-flow-label{paint-order:stroke;stroke:var(--afh-bg,#08101f);stroke-width:7;stroke-linejoin:round;fill:var(--afh-muted,#95a4bd);font:650 8.5px var(--afh-mono,ui-monospace,monospace);letter-spacing:.04em}.afh-entity.is-active{opacity:1}.afh-entity.is-active .afh-entity-frame{stroke:var(--afh-accent,#5eead4);fill:var(--afh-card-active,#1b2a42)}.afh-flow.is-active{opacity:1}.afh-flow.is-active .afh-flow-path{stroke:var(--afh-accent,#5eead4);stroke-width:2.5}.afh-zone.is-active{opacity:1}.afh-zone.is-active .afh-zone-frame{stroke:var(--afh-accent,#5eead4);stroke-opacity:.5}@media(prefers-reduced-motion:reduce){.afh-zone,.afh-entity,.afh-flow{transition:none}}</style><g id="zone-sources" class="afh-zone" data-af-zone="zone-sources" data-af-tone="cool"><rect class="afh-zone-frame" x="20" y="58" width="250" height="620" rx="24"/><text class="afh-zone-title" x="42" y="89">External sources</text></g><g id="zone-ingest" class="afh-zone" data-af-zone="zone-ingest" data-af-tone="mint"><rect class="afh-zone-frame" x="320" y="58" width="300" height="620" rx="24"/><text class="afh-zone-title" x="342" y="89">Ingest &amp; index</text></g><g id="zone-state" class="afh-zone" data-af-zone="zone-state" data-af-tone="amber"><rect class="afh-zone-frame" x="680" y="58" width="280" height="620" rx="24"/><text class="afh-zone-title" x="702" y="89">State layer</text></g><g id="zone-serve" class="afh-zone" data-af-zone="zone-serve" data-af-tone="violet"><rect class="afh-zone-frame" x="1020" y="58" width="300" height="620" rx="24"/><text class="afh-zone-title" x="1042" y="89">Reason &amp; serve</text></g><g id="zone-clients" class="afh-zone" data-af-zone="zone-clients" data-af-tone="blue"><rect class="afh-zone-frame" x="1380" y="58" width="260" height="620" rx="24"/><text class="afh-zone-title" x="1402" y="89">Clients</text></g><g id="arso-ingest" class="afh-flow" data-af-flow="arso-ingest" data-af-kind="data"><path class="afh-flow-halo" d="M 255 152 L 345 152"/><path class="afh-flow-path" d="M 255 152 L 345 152" marker-end="url(#afh-arrow)"/><text class="afh-flow-label" x="295" y="139" text-anchor="middle">XML</text></g><g id="docs-indexer" class="afh-flow" data-af-flow="docs-indexer" data-af-kind="data"><path class="afh-flow-halo" d="M 255 332 L 345 332"/><path class="afh-flow-path" d="M 255 332 L 345 332" marker-end="url(#afh-arrow)"/><text class="afh-flow-label" x="295" y="319" text-anchor="middle">docs</text></g><g id="ingest-state" class="afh-flow" data-af-flow="ingest-state" data-af-kind="data"><path class="afh-flow-halo" d="M 595 185 L 705 185"/><path class="afh-flow-path" d="M 595 185 L 705 185" marker-end="url(#afh-arrow)"/><text class="afh-flow-label" x="650" y="172" text-anchor="middle">rows</text></g><g id="indexer-state" class="afh-flow" data-af-flow="indexer-state" data-af-kind="data"><path class="afh-flow-halo" d="M 595 332 L 650 332 L 650 285 L 705 285"/><path class="afh-flow-path" d="M 595 332 L 650 332 L 650 285 L 705 285" marker-end="url(#afh-arrow)"/><text class="afh-flow-label" x="650" y="269" text-anchor="middle">vecs</text></g><g id="state-flask" class="afh-flow" data-af-flow="state-flask" data-af-kind="data"><path class="afh-flow-halo" d="M 945 185 L 1045 185"/><path class="afh-flow-path" d="M 945 185 L 1045 185" marker-end="url(#afh-arrow)"/><text class="afh-flow-label" x="990" y="172" text-anchor="middle">SQL</text></g><g id="state-graph" class="afh-flow" data-af-flow="state-graph" data-af-kind="data"><path class="afh-flow-halo" d="M 945 285 L 975 285 L 975 345 L 1045 345"/><path class="afh-flow-path" d="M 945 285 L 975 285 L 975 345 L 1045 345" marker-end="url(#afh-arrow)"/><text class="afh-flow-label" x="990" y="365" text-anchor="middle">RAG</text></g><g id="flask-ui" class="afh-flow" data-af-flow="flask-ui" data-af-kind="data"><path class="afh-flow-halo" d="M 1295 150 L 1405 150"/><path class="afh-flow-path" d="M 1295 150 L 1405 150" marker-end="url(#afh-arrow)"/><text class="afh-flow-label" x="1350" y="137" text-anchor="middle">JSON</text></g><g id="cli-graph" class="afh-flow" data-af-flow="cli-graph" data-af-kind="request"><path class="afh-flow-halo" d="M 1405 320 L 1295 320"/><path class="afh-flow-path" d="M 1405 320 L 1295 320" marker-end="url(#afh-arrow)"/><text class="afh-flow-label" x="1350" y="307" text-anchor="middle">ask</text></g><g id="graph-answer" class="afh-flow" data-af-flow="graph-answer" data-af-kind="data"><path class="afh-flow-halo" d="M 1170 400 L 1170 500"/><path class="afh-flow-path" d="M 1170 400 L 1170 500" marker-end="url(#afh-arrow)"/><text class="afh-flow-label" x="1210" y="453" text-anchor="middle">context</text></g><g id="answer-cli" class="afh-flow" data-af-flow="answer-cli" data-af-kind="response"><path class="afh-flow-halo" d="M 1295 530 L 1350 530 L 1350 360 L 1405 360"/><path class="afh-flow-path" d="M 1295 530 L 1350 530 L 1350 360 L 1405 360" marker-end="url(#afh-arrow)"/><text class="afh-flow-label" x="1350" y="347" text-anchor="middle">reply</text></g><g id="arso" class="afh-entity" data-af-entity="arso" data-af-kind="source"><rect class="afh-entity-shadow" x="47" y="115" width="210" height="84" rx="16"/><rect class="afh-entity-frame" x="45" y="110" width="210" height="84" rx="16"/><g class="afh-icon" transform="translate(58 123)"><rect width="27" height="27" rx="8"/><text x="13.5" y="17.5" text-anchor="middle">IN</text></g><text class="afh-tag" x="248" y="103" text-anchor="end">XML</text><text class="afh-entity-title" x="95" y="136">ARSO hourly feed</text><text class="afh-entity-caption" x="59" y="160">Official XML telemetry for</text><text class="afh-entity-caption" x="59" y="173">Slovenian stations</text></g><g id="docs" class="afh-entity" data-af-entity="docs" data-af-kind="source"><rect class="afh-entity-shadow" x="47" y="295" width="210" height="84" rx="16"/><rect class="afh-entity-frame" x="45" y="290" width="210" height="84" rx="16"/><g class="afh-icon" transform="translate(58 303)"><rect width="27" height="27" rx="8"/><text x="13.5" y="17.5" text-anchor="middle">IN</text></g><text class="afh-tag" x="248" y="283" text-anchor="end">DOCS</text><text class="afh-entity-title" x="95" y="316">RAG source docs</text><text class="afh-entity-caption" x="59" y="340">Uredba · poročila · definitions</text></g><g id="ingest" class="afh-entity" data-af-entity="ingest" data-af-kind="process"><rect class="afh-entity-shadow" x="347" y="112" width="250" height="90" rx="16"/><rect class="afh-entity-frame" x="345" y="107" width="250" height="90" rx="16"/><g class="afh-icon" transform="translate(358 120)"><rect width="27" height="27" rx="8"/><text x="13.5" y="17.5" text-anchor="middle">FX</text></g><text class="afh-tag" x="588" y="100" text-anchor="end">FLASK</text><text class="afh-entity-title" x="395" y="133">ARSO ingest &amp; merge</text><text class="afh-entity-caption" x="359" y="157">fetch → parse → merge → cache</text></g><g id="indexer" class="afh-entity" data-af-entity="indexer" data-af-kind="process"><rect class="afh-entity-shadow" x="347" y="292" width="250" height="90" rx="16"/><rect class="afh-entity-frame" x="345" y="287" width="250" height="90" rx="16"/><g class="afh-icon" transform="translate(358 300)"><rect width="27" height="27" rx="8"/><text x="13.5" y="17.5" text-anchor="middle">FX</text></g><text class="afh-tag" x="588" y="280" text-anchor="end">WATCH</text><text class="afh-entity-title" x="395" y="313">Document indexer</text><text class="afh-entity-caption" x="359" y="337">watchdog → chunk → Ollama embed</text></g><g id="state" class="afh-entity" data-af-entity="state" data-af-kind="store"><rect class="afh-entity-shadow" x="707" y="165" width="240" height="150" rx="16"/><rect class="afh-entity-frame" x="705" y="160" width="240" height="150" rx="16"/><g class="afh-icon" transform="translate(718 173)"><rect width="27" height="27" rx="8"/><text x="13.5" y="17.5" text-anchor="middle">DB</text></g><text class="afh-tag" x="938" y="153" text-anchor="end">PG17</text><text class="afh-entity-title" x="755" y="186">PostgreSQL + Redis</text><text class="afh-entity-caption" x="719" y="210">pgvector docs · measurements · cached</text><text class="afh-entity-caption" x="719" y="223">payloads</text></g><g id="flask" class="afh-entity" data-af-entity="flask" data-af-kind="interface"><rect class="afh-entity-shadow" x="1047" y="105" width="250" height="100" rx="16"/><rect class="afh-entity-frame" x="1045" y="100" width="250" height="100" rx="16"/><g class="afh-icon" transform="translate(1058 113)"><rect width="27" height="27" rx="8"/><text x="13.5" y="17.5" text-anchor="middle">API</text></g><text class="afh-tag" x="1288" y="93" text-anchor="end">API</text><text class="afh-entity-title" x="1095" y="126">Flask REST API</text><text class="afh-entity-caption" x="1059" y="150">/api/latest · /api/history</text></g><g id="graph" class="afh-entity" data-af-entity="graph" data-af-kind="control"><rect class="afh-entity-shadow" x="1047" y="295" width="250" height="110" rx="16"/><rect class="afh-entity-frame" x="1045" y="290" width="250" height="110" rx="16"/><g class="afh-icon" transform="translate(1058 303)"><rect width="27" height="27" rx="8"/><text x="13.5" y="17.5" text-anchor="middle">OK</text></g><text class="afh-tag" x="1288" y="283" text-anchor="end">LG</text><text class="afh-entity-title" x="1095" y="316">LangGraph router</text><text class="afh-entity-caption" x="1059" y="340">router → rag | sql | redis | splosno</text></g><g id="answer" class="afh-entity" data-af-entity="answer" data-af-kind="process"><rect class="afh-entity-shadow" x="1047" y="505" width="250" height="100" rx="16"/><rect class="afh-entity-frame" x="1045" y="500" width="250" height="100" rx="16"/><g class="afh-icon" transform="translate(1058 513)"><rect width="27" height="27" rx="8"/><text x="13.5" y="17.5" text-anchor="middle">FX</text></g><text class="afh-tag" x="1288" y="493" text-anchor="end">LLM</text><text class="afh-entity-title" x="1095" y="526">Answer composer</text><text class="afh-entity-caption" x="1059" y="550">DeepSeek · grounded in retrieved context</text></g><g id="ui" class="afh-entity" data-af-entity="ui" data-af-kind="view"><rect class="afh-entity-shadow" x="1407" y="105" width="210" height="100" rx="16"/><rect class="afh-entity-frame" x="1405" y="100" width="210" height="100" rx="16"/><g class="afh-icon" transform="translate(1418 113)"><rect width="27" height="27" rx="8"/><text x="13.5" y="17.5" text-anchor="middle">VW</text></g><text class="afh-tag" x="1608" y="93" text-anchor="end">NEXT</text><text class="afh-entity-title" x="1455" y="126">Next.js dashboard</text><text class="afh-entity-caption" x="1419" y="150">AQI cards · history charts</text></g><g id="cli" class="afh-entity" data-af-entity="cli" data-af-kind="interface"><rect class="afh-entity-shadow" x="1407" y="295" width="210" height="100" rx="16"/><rect class="afh-entity-frame" x="1405" y="290" width="210" height="100" rx="16"/><g class="afh-icon" transform="translate(1418 303)"><rect width="27" height="27" rx="8"/><text x="13.5" y="17.5" text-anchor="middle">API</text></g><text class="afh-tag" x="1608" y="283" text-anchor="end">CLI</text><text class="afh-entity-title" x="1455" y="316">CLI ask()</text><text class="afh-entity-caption" x="1419" y="340">python -m ai.main &quot;vprašanje&quot;</text></g></svg>
+        </div>
+        <div class="phase-bar">
+          <p class="phase-banner" id="phaseBanner" aria-live="polite">Loading architecture phases…</p>
+          <div class="phase-controls">
+            <button type="button" id="phasePrev" aria-label="Previous chapter" title="Previous chapter">←</button>
+            <button type="button" id="phasePlay" aria-label="Pause animation" title="Play / pause">❚❚</button>
+            <button type="button" id="phaseNext" aria-label="Next chapter" title="Next chapter">→</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="diagram-notes">
+        <div class="diagram-note"><strong>Timer lives in Flask</strong>The hourly job is an APScheduler interval inside <code>create_app()</code>, plus one synchronous run at boot.</div>
+        <div class="diagram-note"><strong>Redis is the fast path</strong><code>/api/latest</code> tries Redis, then Flask-Caching, then an in-process copy, then forces an update, then rebuilds from Postgres.</div>
+        <div class="diagram-note"><strong>The AI path is CLI-only</strong>The graph is invoked by <code>ai/main.py</code>; no Flask blueprint calls it yet.</div>
+      </div>
+    </section>
+
+    <!-- ============ COMPONENTS ============ -->
+    <section id="components" class="reveal">
+      <div class="section-label">02 · Component directory</div>
+      <h2>Where the work happens</h2>
+      <p class="section-lede">Every row maps to a real module or route. Layer tags follow the diagram: sources, ingestion, state, serving, web, and operations.</p>
+
+      <div class="ledger">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th>Layer</th><th>Component</th><th>File</th><th>Responsibility</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="tag">Source</span></td><td>ARSO client</td><td class="path">backend/network/arso_client.py</td><td>GETs the official hourly XML feed with a 10&nbsp;s timeout.</td></tr>
+              <tr><td><span class="tag">Source</span></td><td>RAG watcher</td><td class="path">ai/rag/watcher.py</td><td>Watches <code>ai/rag_sources</code> for created, modified, and moved files.</td></tr>
+              <tr><td><span class="tag">Ingest</span></td><td><code>update_data()</code></td><td class="path">backend/data/update_data.py</td><td>Orchestrates fetch → parse → merge → cache → DB → history refresh.</td></tr>
+              <tr><td><span class="tag">Ingest</span></td><td>Station parser</td><td class="path">backend/parsers/station_parser.py</td><td>Turns XML <code>postaja</code> elements into station dataclasses.</td></tr>
+              <tr><td><span class="tag">Ingest</span></td><td>Measurement parser</td><td class="path">backend/parsers/measurments_parser.py</td><td>Turns XML measurement elements into pollutant readings.</td></tr>
+              <tr><td><span class="tag">Ingest</span></td><td>Merger</td><td class="path">backend/parsers/stations_and_measurments_merger.py</td><td>Builds a dict keyed by <code>station_id</code> with info + measurements.</td></tr>
+              <tr><td><span class="tag">Ingest</span></td><td>DB writer</td><td class="path">backend/parsers/insert_data.py</td><td>Upserts stations, pollutants, and measurements via Postgres <code>ON CONFLICT</code>.</td></tr>
+              <tr><td><span class="tag">State</span></td><td>ORM models</td><td class="path">backend/database/db_models.py</td><td>Stations, pollutants, and measurements with foreign keys.</td></tr>
+              <tr><td><span class="tag">State</span></td><td>Session factory</td><td class="path">backend/database/session.py</td><td>SQLAlchemy engine, pool 10 + overflow 5, pre-ping.</td></tr>
+              <tr><td><span class="tag">State</span></td><td>Latest cache</td><td class="path">backend/utils/redis.py</td><td>Redis first, Flask-Caching / in-process fallback for <code>latest_merged_data</code>.</td></tr>
+              <tr><td><span class="tag">State</span></td><td>History cache</td><td class="path">backend/utils/history_cache.py</td><td>Buckets, downsamples, and AQI-enriches day/week/month/year payloads.</td></tr>
+              <tr><td><span class="tag">API</span></td><td>Flask app</td><td class="path">backend/app.py</td><td>Cache wiring, Prometheus, blueprint registration, hourly scheduler.</td></tr>
+              <tr><td><span class="tag">API</span></td><td><code>/api/latest</code></td><td class="path">backend/routes/api_latest.py</td><td>Cache-first latest snapshot with DB rebuild fallback.</td></tr>
+              <tr><td><span class="tag">API</span></td><td><code>/api/history</code></td><td class="path">backend/routes/api_latest.py</td><td>Period + station filters, 120 req/min IP limiter, cache-control.</td></tr>
+              <tr><td><span class="tag tag--amber">AI</span></td><td>LangGraph graph</td><td class="path">ai/graph.py</td><td>Router → four conditional nodes → answer → END.</td></tr>
+              <tr><td><span class="tag tag--amber">AI</span></td><td>Router node</td><td class="path">ai/nodes/router.py</td><td>DeepSeek classification prompt with keyword fallbacks.</td></tr>
+              <tr><td><span class="tag tag--amber">AI</span></td><td>RAG node</td><td class="path">ai/nodes/rag.py</td><td>Calls <code>rag_search(top_k=5)</code> and stores JSON context.</td></tr>
+              <tr><td><span class="tag tag--amber">AI</span></td><td>SQL node</td><td class="path">ai/nodes/sql.py</td><td>Schema prompt → SQL → guarded read-only execution.</td></tr>
+              <tr><td><span class="tag tag--amber">AI</span></td><td>Redis node</td><td class="path">ai/nodes/redis.py</td><td>Extracts latest/day/week/month/year, reads cached payloads.</td></tr>
+              <tr><td><span class="tag tag--amber">AI</span></td><td>Answer node</td><td class="path">ai/nodes/answer.py</td><td>DeepSeek at temperature 0.3, grounded in retrieved context.</td></tr>
+              <tr><td><span class="tag tag--amber">AI</span></td><td>Tool set</td><td class="path">ai/tools.py</td><td><code>sql_query</code>, <code>rag_search</code>, <code>redis_latest</code>, <code>redis_history</code>.</td></tr>
+              <tr><td><span class="tag tag--amber">AI</span></td><td>ReAct loop</td><td class="path">ai/agent.py</td><td>Legacy 15-iteration tool-calling loop; not used by the graph.</td></tr>
+              <tr><td><span class="tag tag--amber">AI</span></td><td>Vectorizer</td><td class="path">ai/rag/vectorize.py</td><td>PDF/text extraction, 1500/200 chunking, Ollama embeddings, hash gate.</td></tr>
+              <tr><td><span class="tag">Web</span></td><td>Dashboard page</td><td class="path">frontend-next/app/page.tsx</td><td>Polls <code>/api/latest</code> every 60&nbsp;s; fetches history per station.</td></tr>
+              <tr><td><span class="tag">Web</span></td><td>AQI utilities</td><td class="path">frontend-next/app/utils/aqi.ts</td><td>EU and WHO threshold profiles, band scoring, categories.</td></tr>
+              <tr><td><span class="tag">Web</span></td><td>Station card</td><td class="path">frontend-next/app/components/StationCard.tsx</td><td>Station AQI badge and per-pollutant level pills.</td></tr>
+              <tr><td><span class="tag">Web</span></td><td>History chart</td><td class="path">frontend-next/app/components/HistoryChart.tsx</td><td>Recharts series with threshold-coloured segments.</td></tr>
+              <tr><td><span class="tag">Ops</span></td><td>Nginx</td><td class="path">docker/nginx.conf</td><td>Static export, reverse proxy, rate limits, security headers.</td></tr>
+              <tr><td><span class="tag">Ops</span></td><td>Docker Compose</td><td class="path">docker/docker-compose.yml</td><td>Nginx, backend, Redis, Postgres/pgvector, Ollama, Prometheus, Grafana, Portainer.</td></tr>
+              <tr><td><span class="tag">Ops</span></td><td>CI/CD workflow</td><td class="path">.github/workflows/docker-ghcr.yml</td><td>Tests, GHCR image build, static frontend deploy, Hetzner health checks.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ DATA FLOW ============ -->
+    <section id="dataflow" class="reveal">
+      <div class="section-label">03 · Data flow</div>
+      <h2>Two request lifecycles</h2>
+      <p class="section-lede">The left column is the hourly write path that keeps the dashboard fresh. The right column is the on-demand read path that turns a question into an answer.</p>
+
+      <div class="plane-split">
+        <article class="plane plane--telemetry">
+          <div class="plane-head">
+            <h3>Telemetry plane</h3>
+            <span class="tag tag--accent">Hourly · Flask</span>
+          </div>
+          <p class="plane-sub">Write path: ARSO XML → Redis hot copy → PostgreSQL history → REST payloads.</p>
+
+          <div class="plane-step"><div class="step-num">01</div><div><strong>Scheduler fires</strong><p><code>BackgroundScheduler</code> runs <code>update_data()</code> every hour inside an app context; one synchronous run also happens at boot.</p></div></div>
+          <div class="plane-step"><div class="step-num">02</div><div><strong>Fetch the feed</strong><p><code>fetch_arso_xml()</code> requests the ARSO hourly XML with a 10&nbsp;s timeout and UTF-8 decoding.</p></div></div>
+          <div class="plane-step"><div class="step-num">03</div><div><strong>Parse twice, merge once</strong><p>Station and measurement parsers each return a <code>ParseResult</code>; the merger keys everything by <code>station_id</code> and appends measurements.</p></div></div>
+          <div class="plane-step"><div class="step-num">04</div><div><strong>Cache before persist</strong><p>The merged snapshot is serialised to <code>latest_merged_data</code> first, so the API can recover even if the DB insert fails.</p></div></div>
+          <div class="plane-step"><div class="step-num">05</div><div><strong>Upsert and rebuild</strong><p><code>insert_all_data()</code> writes stations, pollutants, and measurements; <code>refresh_history_cache()</code> rebuilds all four history periods.</p></div></div>
+          <div class="plane-step"><div class="step-num">06</div><div><strong>Serve</strong><p><code>/api/latest</code> returns the cached JSON; <code>/api/history</code> validates the period, rate-limits per IP, aggregates into time bins, and attaches EU/WHO AQI scores.</p></div></div>
+        </article>
+
+        <article class="plane plane--ai">
+          <div class="plane-head">
+            <h3>Question plane</h3>
+            <span class="tag tag--amber">On demand · LangGraph</span>
+          </div>
+          <p class="plane-sub">Read path: question → route → evidence → grounded answer.</p>
+
+          <div class="plane-step"><div class="step-num">01</div><div><strong>CLI entry</strong><p><code>python -m ai.main "&lt;vprašanje&gt;"</code> builds the graph and seeds <code>AgentState</code> with question, empty route/context/answer, and a null error.</p></div></div>
+          <div class="plane-step"><div class="step-num">02</div><div><strong>Classify</strong><p><code>router_node</code> prompts DeepSeek at temperature 0 and validates the response against four routes, with keyword fallbacks if the model rambles.</p></div></div>
+          <div class="plane-step"><div class="step-num">03</div><div><strong>Dispatch</strong><p>A conditional edge maps <code>state["route"]</code> to <code>rag</code>, <code>sql</code>, <code>redis</code>, or <code>splosno</code> — all four converge on the answer node.</p></div></div>
+          <div class="plane-step"><div class="step-num">04</div><div><strong>Gather evidence</strong><p>RAG embeds the query through Ollama and runs cosine search in pgvector; SQL asks DeepSeek for a query and executes it with a read-only role; Redis extracts a period and reads cached keys.</p></div></div>
+          <div class="plane-step"><div class="step-num">05</div><div><strong>Compose</strong><p><code>answer_node</code> selects a with-context or without-context prompt, calls DeepSeek at temperature 0.3, and refuses to invent data outside the context.</p></div></div>
+          <div class="plane-step"><div class="step-num">06</div><div><strong>Return</strong><p>The graph reaches END and the CLI prints route, error, and answer. Errors are converted into a readable Slovenian data-fetch message.</p></div></div>
+        </article>
+      </div>
+
+      <div class="shared-state"><strong>Shared contract:</strong> &nbsp;PostgreSQL holds measurements and document vectors · Redis holds the latest snapshot and precomputed history payloads · both paths use the same database.</div>
+    </section>
+
+    <!-- ============ STORAGE ============ -->
+    <section id="storage" class="reveal">
+      <div class="section-label">04 · State layer</div>
+      <h2>Five tables, two hot keys</h2>
+      <p class="section-lede">PostgreSQL 17 with pgvector is the durable source of truth. Redis exists to keep the dashboard response path short and to give the agent a cache-backed route for current readings.</p>
+
+      <div class="schema-grid">
+        <div class="schema-card">
+          <h4>stations <span>RELATIONAL</span></h4>
+          <ul>
+            <li><b>id</b> · integer PK</li>
+            <li><b>station_id</b> · source code</li>
+            <li><b>station_name</b> · display name</li>
+            <li><b>latitude / longitude</b></li>
+            <li><b>d96_easting / northing</b></li>
+            <li><b>elevation_meters</b></li>
+          </ul>
+          <p class="note">Measurement FK cascades on delete.</p>
+        </div>
+        <div class="schema-card">
+          <h4>pollutants <span>LOOKUP</span></h4>
+          <ul>
+            <li><b>id</b> · integer PK</li>
+            <li><b>name</b> · unique (co, o3, no2…)</li>
+            <li><b>unit</b> · μg/m³, CO in mg/m³</li>
+          </ul>
+          <p class="note">Seeded dynamically from the measurement dataclass fields.</p>
+        </div>
+        <div class="schema-card">
+          <h4>measurements <span>FACT</span></h4>
+          <ul>
+            <li><b>id</b> · integer PK</li>
+            <li><b>station_id</b> → stations.id</li>
+            <li><b>pollutant_id</b> → pollutants.id</li>
+            <li><b>value</b> · float, nullable</li>
+            <li><b>measured_at</b> · datetime</li>
+          </ul>
+          <p class="note">Indexed for latest-row and period queries.</p>
+        </div>
+        <div class="schema-card">
+          <h4>documents <span>VECTOR</span></h4>
+          <ul>
+            <li><b>content</b> · chunk text</li>
+            <li><b>embedding</b> · pgvector</li>
+            <li><b>source</b> · file name</li>
+            <li><b>UNIQUE</b> (source, content)</li>
+          </ul>
+          <p class="note">Cosine distance via <code>&lt;=&gt;</code>; top-k retrieval.</p>
+        </div>
+        <div class="schema-card">
+          <h4>rag_sources_status <span>REGISTRY</span></h4>
+          <ul>
+            <li><b>source</b> · unique file</li>
+            <li><b>status</b> · processing/done/failed</li>
+            <li><b>content_hash</b> · SHA-256</li>
+            <li><b>chunks_count</b> · integer</li>
+            <li><b>processed_at</b> · timestamp</li>
+            <li><b>last_error</b> · text</li>
+          </ul>
+          <p class="note">Unchanged files are skipped by hash.</p>
+        </div>
+        <div class="schema-card">
+          <h4>Redis <span>HOT PATH</span></h4>
+          <ul>
+            <li><b>latest_merged_data</b></li>
+            <li><b>history_payload:day</b></li>
+            <li><b>history_payload:week</b></li>
+            <li><b>history_payload:month</b></li>
+            <li><b>history_payload:year</b></li>
+          </ul>
+          <p class="note">Values are JSON strings, UTF-8 encoded.</p>
+        </div>
+      </div>
+
+      <div class="storage-lower">
+        <div class="terminal">
+          <div class="terminal-bar"><i></i><i></i><i></i><span>ingestion invariants</span></div>
+          <pre><b>skip</b>   if status = done and sha256(file) unchanged
+<b>reset</b>  delete rows and re-index when the hash changes
+<b>claim</b>  status = processing before any embedding call
+<b>guard</b>  expected_chunks == actual_rows, else fail
+<b>mark</b>   status = failed + last_error on any exception
+<b>chunk</b>  1500 chars, 200 overlap, RecursiveChunker</pre>
+        </div>
+        <div class="fallback-card">
+          <h4>Latest-snapshot fallback ladder</h4>
+          <div class="chain">
+            <div class="chain-node"><b>1</b> Redis <code>latest_merged_data</code></div>
+            <div class="chain-arrow"></div>
+            <div class="chain-node"><b>2</b> Flask-Caching cache backend</div>
+            <div class="chain-arrow"></div>
+            <div class="chain-node"><b>3</b> In-process <code>_LATEST_MERGED_DATA_JSON</code></div>
+            <div class="chain-arrow"></div>
+            <div class="chain-node"><b>4</b> Force <code>update_data()</code> and retry</div>
+            <div class="chain-arrow"></div>
+            <div class="chain-node final"><b>5</b> Rebuild payload from PostgreSQL</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ AI ROUTING ============ -->
+    <section id="ai" class="reveal">
+      <div class="section-label">05 · Agent routing</div>
+      <h2>One router, four evidence paths</h2>
+      <p class="section-lede">The router is a prompt, not a classifier model. It returns a single token and the graph trusts the state field after sanitising it. Each branch reaches a different tool with a different grounding contract.</p>
+
+      <div class="route-map">
+        <div class="route-row">
+          <div class="route-name">rag<span>Documents</span></div>
+          <div class="route-body"><strong>Law, definitions, reports, limit values.</strong> The node calls <code>rag_search(question, top_k=5)</code>. The tool embeds the query through Ollama (<code>nomic-embed-text</code>) and orders <code>documents</code> by cosine distance. Context is a JSON wrapper of question + chunks with similarity.</div>
+          <div class="route-tool"><code>rag.py</code><br>pgvector · top 5</div>
+        </div>
+        <div class="route-row">
+          <div class="route-name">sql<span>History</span></div>
+          <div class="route-body"><strong>Past measurements, averages, maxima, station comparisons.</strong> The node asks DeepSeek to write a SELECT against the three-table schema, strips markdown fences, and executes through <code>sql_query</code>. Guardrails: read-only DB role, SELECT-only check, forbidden DML keywords, single statement, forced <code>LIMIT 100</code>.</div>
+          <div class="route-tool"><code>sql.py</code><br>PostgreSQL · read-only</div>
+        </div>
+        <div class="route-row">
+          <div class="route-name">redis<span>Current</span></div>
+          <div class="route-body"><strong>Now, last 24 h, this week, this month, this year.</strong> A second prompt extracts one of <code>latest | day | week | month | year</code>; the node reads <code>latest_merged_data</code> or <code>history_payload:&lt;period&gt;</code>.</div>
+          <div class="route-tool"><code>redis.py</code><br>Redis · cached JSON</div>
+        </div>
+        <div class="route-row">
+          <div class="route-name">splosno<span>Fallback</span></div>
+          <div class="route-body"><strong>Greetings and off-topic questions.</strong> The node returns empty context; the answer node switches to the without-context prompt and responds politely in Slovenian without pretending to have data.</div>
+          <div class="route-tool"><code>splosno.py</code><br>no tools</div>
+        </div>
+      </div>
+
+      <div class="legacy-note">
+        <span class="tag tag--amber">Legacy path</span>
+        <div>
+          <h4>ai/agent.py still contains a second agent runtime</h4>
+          <p>A standalone ReAct-style loop binds the same four tools to DeepSeek and iterates up to 15 times, appending tool messages until the model stops calling tools. The LangGraph graph never imports it. Keeping both is useful for experimentation, but the prompts and tool contracts can drift.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SERVICES ============ -->
+    <section id="services" class="reveal">
+      <div class="section-label">06 · External services</div>
+      <h2>Eight dependencies to trust</h2>
+      <p class="section-lede">Only one service is a public upstream. The rest are self-hosted containers or managed CI infrastructure — the architecture is deliberately local-first.</p>
+
+      <div class="services-grid">
+        <div class="service-card" data-tone="accent">
+          <div class="service-head"><h4>ARSO XML feed</h4><span class="tag tag--accent">Upstream</span></div>
+          <p>Official Slovenian air-quality telemetry. Pulled over HTTPS; no authentication.</p>
+          <div class="service-meta">GET · 10 s timeout<br>ones_zrak_urni_podatki_zadnji.xml</div>
+        </div>
+        <div class="service-card" data-tone="amber">
+          <div class="service-head"><h4>DeepSeek API</h4><span class="tag tag--amber">LLM</span></div>
+          <p>OpenAI-compatible endpoint used for routing, SQL generation, and final answers.</p>
+          <div class="service-meta">api.deepseek.com/v1<br>deepseek-chat · temp 0 / 0.3</div>
+        </div>
+        <div class="service-card" data-tone="accent">
+          <div class="service-head"><h4>Ollama</h4><span class="tag tag--accent">Embeddings</span></div>
+          <p>Local embedding HTTP API; also hosts the optional Phi-3 generation endpoint.</p>
+          <div class="service-meta">:11434 · nomic-embed-text<br>container: airquality_ollama</div>
+        </div>
+        <div class="service-card" data-tone="amber">
+          <div class="service-head"><h4>PostgreSQL + pgvector</h4><span class="tag tag--amber">Truth</span></div>
+          <p>Relational measurements plus vector document search; two credential paths.</p>
+          <div class="service-meta">pgvector/pgvector:pg17<br>full role + read-only SQL role</div>
+        </div>
+        <div class="service-card" data-tone="amber">
+          <div class="service-head"><h4>Redis</h4><span class="tag tag--amber">Cache</span></div>
+          <p>Latest snapshot, history payloads, and the Flask-Caching backend.</p>
+          <div class="service-meta">redis:7.2-alpine<br>127.0.0.1:6379 · DB 0</div>
+        </div>
+        <div class="service-card" data-tone="accent">
+          <div class="service-head"><h4>Nginx</h4><span class="tag tag--accent">Edge</span></div>
+          <p>Serves the static Next.js export, proxies <code>/api/</code>, and enforces request limits.</p>
+          <div class="service-meta">nginx:1.27-alpine<br>10 r/s API · 20 r/min LLM lane</div>
+        </div>
+        <div class="service-card" data-tone="accent">
+          <div class="service-head"><h4>Prometheus + Grafana</h4><span class="tag tag--accent">Observability</span></div>
+          <p>Scrapes the Flask app every 15 s; Grafana provides dashboards over 7-day retention.</p>
+          <div class="service-meta">backend:5000 · 15 s scrape<br>prometheus:v2.51 · grafana:10.4</div>
+        </div>
+        <div class="service-card" data-tone="amber">
+          <div class="service-head"><h4>GHCR + Hetzner</h4><span class="tag tag--amber">Delivery</span></div>
+          <p>GitHub Actions publishes the image; Docker Compose on Hetzner recreates backend, Redis, and nginx.</p>
+          <div class="service-meta">ghcr.io/miranas/air_pollution_app<br>docker compose pull + up -d</div>
+        </div>
+        <div class="service-card">
+          <div class="service-head"><h4>Portainer</h4><span class="tag">Optional</span></div>
+          <p>Container management UI mounted on the Docker socket; operational convenience, not part of the request path.</p>
+          <div class="service-meta">:9443 · portainer-ce 2.21</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ DEPLOYMENT ============ -->
+    <section id="deploy" class="reveal">
+      <div class="section-label">07 · Delivery pipeline</div>
+      <h2>From main to Hetzner</h2>
+      <p class="section-lede">Every push to <code>main</code> runs the test suite, builds a container and a static bundle, ships both to the server, and verifies the public endpoints before declaring success.</p>
+
+      <div class="timeline">
+        <div class="timeline-step"><div class="timeline-num">01</div><div class="timeline-body"><h4>Push to main</h4><p>GitHub Actions checks out the repository with Node 24 forced for JavaScript actions.</p></div></div>
+        <div class="timeline-step"><div class="timeline-num">02</div><div class="timeline-body"><h4>Test with uv</h4><p><code>uv sync --locked --all-extras</code> then <code>uv run pytest</code>; a failing test stops the deploy.</p></div></div>
+        <div class="timeline-step"><div class="timeline-num">03</div><div class="timeline-body"><h4>Build and push the API image</h4><p>Buildx caches through GHCR and pushes <code>ghcr.io/miranas/air_pollution_app:latest</code>.</p></div></div>
+        <div class="timeline-step"><div class="timeline-num">04</div><div class="timeline-body"><h4>Build the static frontend</h4><p><code>npm ci && npm run build</code> produces <code>frontend-next/out</code> because <code>next.config.ts</code> sets <code>output: 'export'</code>.</p></div></div>
+        <div class="timeline-step"><div class="timeline-num">05</div><div class="timeline-body"><h4>Copy assets to the server</h4><p>The <code>out/</code> directory and compose/nginx/Prometheus configs are SCP'd to <code>/opt/air_pollution_app</code>.</p></div></div>
+        <div class="timeline-step"><div class="timeline-num">06</div><div class="timeline-body"><h4>Recreate the stack</h4><p>Compose pulls the new backend image and force-recreates <code>backend</code>, <code>redis</code>, and <code>nginx</code>.</p></div></div>
+        <div class="timeline-step"><div class="timeline-num">07</div><div class="timeline-body"><h4>Verify before finishing</h4><p><code>/api/status</code> must return project JSON, <code>/</code> must serve the HTML shell, and <code>/api/latest</code> is retried five times for HTTP 200.</p></div></div>
+      </div>
+
+      <div class="deploy-warning"><strong>Check before the next deploy:</strong> the workflow builds <code>docker/Dockerfile.api</code>, but the repository currently contains <code>docker/Dockerfile</code>. Either rename the file or update the workflow path, or the image build step will fail.</div>
+    </section>
+
+    <!-- ============ INSIGHTS ============ -->
+    <section id="insights" class="reveal">
+      <div class="section-label">08 · Architecture insights</div>
+      <h2>What the code actually reveals</h2>
+      <p class="section-lede">Seven findings that are not obvious from the directory tree — integration seams, duplicated logic, and safety mechanisms worth preserving.</p>
+
+      <div class="insights-grid">
+        <article class="insight-card insight-card--wide">
+          <div class="insight-index">01</div>
+          <div>
+            <h4>The AI plane is complete but unreachable from the web</h4>
+            <p>The LangGraph graph, router, four source nodes, and answer composer all work from <code>ai/main.py</code>. Flask registers exactly one blueprint — <code>api_latest</code> — with <code>/api/latest</code> and <code>/api/history</code>. Nginx already routes <code>/api/(vprasanje|rag|agent|ask|query)</code> to a 300-second slow lane, so the intended integration point exists at the edge but has no server-side handler.</p>
+            <p><strong>How to apply:</strong> add a Flask <code>/api/ask</code> blueprint that calls <code>graph.invoke()</code>, disable proxy buffering (already done), and map <code>state["answer"]</code> / <code>state["error"]</code> into the response.</p>
+          </div>
+          <div class="insight-side"><b>Files</b>backend/app.py<br>backend/routes/api_latest.py<br>docker/nginx.conf<br><b>Impact</b>High</div>
+        </article>
+
+        <article class="insight-card">
+          <div class="insight-index">02</div>
+          <h4>Two agent runtimes coexist</h4>
+          <p><code>ai/graph.py</code> is the structured five-node graph. <code>ai/agent.py</code> is an older 15-iteration tool-calling loop with the same four tools. Only the graph is documented in the current plan, but both remain runnable.</p>
+        </article>
+
+        <article class="insight-card">
+          <div class="insight-index">03</div>
+          <h4>SQL safety is three walls deep</h4>
+          <p>A separate read-only database user, a SELECT-only keyword guard that rejects DML and multi-statement input, and an automatic <code>LIMIT 100</code> when the model forgets one.</p>
+        </article>
+
+        <article class="insight-card">
+          <div class="insight-index">04</div>
+          <h4>The cache is a ladder, not a layer</h4>
+          <p><code>/api/latest</code> falls through Redis → Flask-Caching → an in-process global → a forced <code>update_data()</code> → a direct PostgreSQL rebuild. Each rung exists to survive a different failure mode.</p>
+        </article>
+
+        <article class="insight-card">
+          <div class="insight-index">05</div>
+          <h4>Document indexing is idempotent by hash</h4>
+          <p>Each source file is claimed as <code>processing</code>, hashed with SHA-256, chunked, embedded, and verified by comparing expected chunks to inserted rows. Unchanged files cost one hash read.</p>
+        </article>
+
+        <article class="insight-card">
+          <div class="insight-index">06</div>
+          <h4>AQI math exists twice</h4>
+          <p><code>backend/utils/history_cache.py</code> scores EU/WHO bands in Python; <code>frontend-next/app/utils/aqi.ts</code> reimplements the same thresholds in TypeScript. Two implementations means two places to drift.</p>
+        </article>
+
+        <article class="insight-card">
+          <div class="insight-index">07</div>
+          <h4>History is pre-shaped for charts</h4>
+          <p>Periods are aggregated into 1 h, 3 h, 6 h, and 24 h buckets and downsampled to 192 / 336 / 360 / 365 points, so the browser never receives raw hourly rows for a year.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ REFERENCES ============ -->
+    <section id="references" class="reveal">
+      <div class="section-label">09 · Code references</div>
+      <h2>Files behind the report</h2>
+      <p class="section-lede">Every architectural claim above resolves to one of these files. Open a group to see the pairing of path and responsibility.</p>
+
+      <div class="refs">
+        <details open>
+          <summary>AI plane</summary>
+          <div class="ref-list">
+            <div class="ref-row"><code>ai/graph.py</code><span>StateGraph wiring, conditional router edge, four source nodes, answer → END.</span></div>
+            <div class="ref-row"><code>ai/state.py</code><span>AgentState TypedDict: question, route, context, answer, error.</span></div>
+            <div class="ref-row"><code>ai/nodes/router.py</code><span>DeepSeek classification prompt and route sanitisation.</span></div>
+            <div class="ref-row"><code>ai/nodes/rag.py</code><span>rag_search(top_k=5) and JSON context packing.</span></div>
+            <div class="ref-row"><code>ai/nodes/sql.py</code><span>Schema prompt, markdown stripping, guarded execution.</span></div>
+            <div class="ref-row"><code>ai/nodes/redis.py</code><span>Period extraction and cached payload reads.</span></div>
+            <div class="ref-row"><code>ai/nodes/answer.py</code><span>Context / no-context prompts, DeepSeek temperature 0.3.</span></div>
+            <div class="ref-row"><code>ai/tools.py</code><span>sql_query guardrails, Ollama embeddings, Redis helpers.</span></div>
+            <div class="ref-row"><code>ai/agent.py</code><span>Legacy ReAct tool loop, max 15 iterations.</span></div>
+            <div class="ref-row"><code>ai/main.py</code><span>CLI entry point and initial state.</span></div>
+          </div>
+        </details>
+        <details>
+          <summary>Ingestion &amp; indexing</summary>
+          <div class="ref-list">
+            <div class="ref-row"><code>backend/network/arso_client.py</code><span>HTTP fetch with timeout, encoding, and decorators.</span></div>
+            <div class="ref-row"><code>backend/network/config.py</code><span>ARSO endpoint and 10-second timeout.</span></div>
+            <div class="ref-row"><code>backend/data/update_data.py</code><span>Hourly orchestration and cache-before-persist order.</span></div>
+            <div class="ref-row"><code>backend/parsers/station_parser.py</code><span>Station XML parsing with per-element skip.</span></div>
+            <div class="ref-row"><code>backend/parsers/measurments_parser.py</code><span>Measurement XML parsing.</span></div>
+            <div class="ref-row"><code>backend/parsers/stations_and_measurments_merger.py</code><span>Station-keyed merge.</span></div>
+            <div class="ref-row"><code>backend/parsers/insert_data.py</code><span>Pollutant seeding and Postgres upserts.</span></div>
+            <div class="ref-row"><code>ai/rag/vectorize.py</code><span>Format readers, PDF normalisation, chunking, embedding, hash gate.</span></div>
+            <div class="ref-row"><code>ai/rag/watcher.py</code><span>Watchdog create / modify / move handler.</span></div>
+          </div>
+        </details>
+        <details>
+          <summary>State &amp; API</summary>
+          <div class="ref-list">
+            <div class="ref-row"><code>backend/database/db_models.py</code><span>Stations, pollutants, measurements, relationships.</span></div>
+            <div class="ref-row"><code>backend/database/session.py</code><span>Engine, pool sizing, pre-ping, session factory.</span></div>
+            <div class="ref-row"><code>backend/utils/redis.py</code><span>Latest snapshot write and fallback cache resolution.</span></div>
+            <div class="ref-row"><code>backend/utils/history_cache.py</code><span>Bucketing, downsampling, AQI bands, history cache.</span></div>
+            <div class="ref-row"><code>backend/routes/api_latest.py</code><span>Latest fallback ladder and history rate limiter.</span></div>
+            <div class="ref-row"><code>backend/app.py</code><span>Cache init, Prometheus, blueprint, scheduler, boot update.</span></div>
+            <div class="ref-row"><code>backend/utils/response_headers.py</code><span>CORS allow-list and response headers.</span></div>
+            <div class="ref-row"><code>backend/utils/serialization.py</code><span>UTF-8 JSON provider and dataclass serialisation.</span></div>
+          </div>
+        </details>
+        <details>
+          <summary>Web &amp; delivery</summary>
+          <div class="ref-list">
+            <div class="ref-row"><code>frontend-next/app/page.tsx</code><span>Latest polling, visibility/focus refresh, history fetch.</span></div>
+            <div class="ref-row"><code>frontend-next/app/components/StationCard.tsx</code><span>AQI index, dominant pollutant, level pills.</span></div>
+            <div class="ref-row"><code>frontend-next/app/components/HistoryChart.tsx</code><span>Recharts line series and threshold colours.</span></div>
+            <div class="ref-row"><code>frontend-next/app/utils/aqi.ts</code><span>EU/WHO thresholds, band scoring, categories.</span></div>
+            <div class="ref-row"><code>frontend-next/next.config.ts</code><span>Static export and unoptimised images.</span></div>
+            <div class="ref-row"><code>docker/docker-compose.yml</code><span>Eight services, volumes, internal networking.</span></div>
+            <div class="ref-row"><code>docker/nginx.conf</code><span>Static root, proxy lanes, rate limits, security headers.</span></div>
+            <div class="ref-row"><code>docker/Dockerfile</code><span>Python 3.14 slim, gunicorn, single worker.</span></div>
+            <div class="ref-row"><code>.github/workflows/docker-ghcr.yml</code><span>Test, build, push, SCP, compose deploy, health checks.</span></div>
+            <div class="ref-row"><code>prometheus.yml</code><span>15-second scrape of the Flask backend.</span></div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <footer>
+      <span>Air Pollution App · architecture report · 22 Oct 2026</span>
+      <span>Built with Archflow · 10 components · 10 flows · 5 chapters</span>
+      <span>Evidence ranges verified against the repository</span>
+    </footer>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- Theme ---------- */
+  var toggle = document.getElementById('themeToggle');
+  function syncToggle() {
+    if (!toggle) return;
+    var light = document.documentElement.classList.contains('light');
+    toggle.textContent = light ? '◑' : '◐';
+    toggle.setAttribute('aria-label', light ? 'Switch to dark theme' : 'Switch to light theme');
+  }
+  if (toggle) {
+    toggle.addEventListener('click', function () {
+      document.documentElement.classList.toggle('light');
+      try {
+        localStorage.setItem('archflow-theme', document.documentElement.classList.contains('light') ? 'light' : 'dark');
+      } catch (e) {}
+      syncToggle();
+    });
+  }
+  syncToggle();
+
+  /* ---------- Hero chapter engine ---------- */
+  var chapters = [];
+  try {
+    var meta = document.getElementById('afh-chapters');
+    if (meta && meta.textContent) chapters = JSON.parse(meta.textContent);
+  } catch (e) { chapters = []; }
+
+  var descriptions = [
+    'ARSO publishes hourly XML telemetry; the watchdog catches new or changed documents in ai/rag_sources.',
+    'update_data() writes the merged snapshot to Redis before persisting to PostgreSQL; the vectorizer chunks and embeds documents into pgvector.',
+    'Flask serves the cached snapshot and precomputed history; nginx delivers the static Next.js export and proxies /api/.',
+    'The CLI invokes LangGraph: the router picks rag | sql | redis | splosno, nodes gather evidence, and DeepSeek composes the answer.',
+    'Both planes share one state layer — telemetry for the dashboard, measurements and document vectors for the question-answering agent.'
+  ];
+  var colorMap = {
+    mint: 'var(--accent)',
+    amber: 'var(--accent2)',
+    blue: 'var(--accent)',
+    violet: 'var(--accent2)',
+    white: 'var(--text)'
+  };
+
+  var nav = document.getElementById('chapterNav');
+  var banner = document.getElementById('phaseBanner');
+  var prevBtn = document.getElementById('phasePrev');
+  var nextBtn = document.getElementById('phaseNext');
+  var playBtn = document.getElementById('phasePlay');
+  var active = 0;
+  var timer = null;
+  var playing = !reduceMotion;
+
+  function clearActive() {
+    var nodes = document.querySelectorAll('[data-af-zone], [data-af-entity], [data-af-flow]');
+    for (var i = 0; i < nodes.length; i += 1) nodes[i].classList.remove('is-active');
+  }
+
+  function activate(index, fromUser) {
+    if (!chapters.length) return;
+    active = ((index % chapters.length) + chapters.length) % chapters.length;
+    var chapter = chapters[active];
+    clearActive();
+
+    (chapter.zones || []).forEach(function (id) {
+      var el = document.querySelector('[data-af-zone="' + id + '"]');
+      if (el) el.classList.add('is-active');
+    });
+    (chapter.entities || []).forEach(function (id) {
+      var el = document.querySelector('[data-af-entity="' + id + '"]');
+      if (el) el.classList.add('is-active');
+    });
+    (chapter.flows || []).forEach(function (id) {
+      var el = document.querySelector('[data-af-flow="' + id + '"]');
+      if (el) el.classList.add('is-active');
+    });
+
+    var color = colorMap[chapter.color] || 'var(--accent)';
+    if (banner) {
+      banner.textContent = '▶ ' + chapter.label + ' — ' + (descriptions[active] || '');
+      banner.style.color = color;
+    }
+    var buttons = nav ? nav.querySelectorAll('.chapter-btn') : [];
+    for (var i = 0; i < buttons.length; i += 1) {
+      buttons[i].classList.toggle('active', i === active);
+      buttons[i].setAttribute('aria-pressed', i === active ? 'true' : 'false');
+    }
+    if (fromUser) restartTimer();
+  }
+
+  function startTimer() {
+    if (timer) clearInterval(timer);
+    if (reduceMotion || !playing) return;
+    timer = setInterval(function () { activate(active + 1, false); }, 3800);
+  }
+  function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
+  function restartTimer() { stopTimer(); startTimer(); }
+
+  function syncPlay() {
+    if (!playBtn) return;
+    playBtn.textContent = playing ? '❚❚' : '▶';
+    playBtn.setAttribute('aria-label', playing ? 'Pause animation' : 'Play animation');
+  }
+
+  if (nav && chapters.length) {
+    for (var chapterIndex = 0; chapterIndex < chapters.length; chapterIndex += 1) {
+      var chapter = chapters[chapterIndex];
+      var btn = nav.querySelector('[data-chapter="' + chapterIndex + '"]');
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'chapter-btn';
+        btn.setAttribute('data-chapter', String(chapterIndex));
+        var num = document.createElement('span');
+        num.className = 'num';
+        num.textContent = String(chapterIndex + 1).padStart(2, '0');
+        btn.appendChild(num);
+        btn.appendChild(document.createTextNode(chapter.label.replace(/^\d+\s*·\s*/, '')));
+        nav.appendChild(btn);
+      }
+      (function (index, element) {
+        element.addEventListener('click', function () {
+          playing = false;
+          syncPlay();
+          activate(index, true);
+        });
+      })(chapterIndex, btn);
+    }
+  }
+
+  if (prevBtn) prevBtn.addEventListener('click', function () { activate(active - 1, true); });
+  if (nextBtn) nextBtn.addEventListener('click', function () { activate(active + 1, true); });
+  if (playBtn) playBtn.addEventListener('click', function () {
+    playing = !playing;
+    syncPlay();
+    if (playing) startTimer(); else stopTimer();
+  });
+
+  activate(0, false);
+  syncPlay();
+  startTimer();
+
+  var shell = document.querySelector('.diagram-shell');
+  if (shell) {
+    shell.addEventListener('mouseenter', stopTimer);
+    shell.addEventListener('mouseleave', function () { if (playing) startTimer(); });
+  }
+
+  /* ---------- Print composite snapshot ---------- */
+  function applyCompositePhase() {
+    stopTimer();
+    if (chapters.length) {
+      clearActive();
+      var all = chapters[chapters.length - 1];
+      (all.zones || []).forEach(function (id) {
+        var el = document.querySelector('[data-af-zone="' + id + '"]');
+        if (el) el.classList.add('is-active');
+      });
+      (all.entities || []).forEach(function (id) {
+        var el = document.querySelector('[data-af-entity="' + id + '"]');
+        if (el) el.classList.add('is-active');
+      });
+      (all.flows || []).forEach(function (id) {
+        var el = document.querySelector('[data-af-flow="' + id + '"]');
+        if (el) el.classList.add('is-active');
+      });
+    }
+    if (banner) banner.textContent = '▶ Architecture overview — all phases';
+  }
+  window.addEventListener('beforeprint', applyCompositePhase);
+  window.addEventListener('afterprint', function () {
+    activate(active, false);
+    if (playing) startTimer();
+  });
+  if (window.matchMedia && window.matchMedia('print').matches) applyCompositePhase();
+
+  /* ---------- Scroll reveal ---------- */
+  var revealables = document.querySelectorAll('.reveal');
+  if (reduceMotion || !('IntersectionObserver' in window)) {
+    for (var i = 0; i < revealables.length; i += 1) revealables[i].classList.add('visible');
+  } else {
+    var revealObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0, rootMargin: '0px 0px -8% 0px' });
+    for (var j = 0; j < revealables.length; j += 1) revealObserver.observe(revealables[j]);
+  }
+
+  /* ---------- TOC scroll spy ---------- */
+  var tocLinks = document.querySelectorAll('.toc__link');
+  if (tocLinks.length && 'IntersectionObserver' in window) {
+    var linksById = {};
+    var sections = [];
+    tocLinks.forEach(function (link) {
+      var id = (link.getAttribute('href') || '').replace('#', '');
+      var section = id && document.getElementById(id);
+      if (section) {
+        linksById[id] = link;
+        sections.push({ id: id, el: section });
+      }
+    });
+    var spy = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        tocLinks.forEach(function (l) { l.classList.remove('active'); });
+        var link = linksById[entry.target.id];
+        if (link) {
+          link.classList.add('active');
+          if (window.innerWidth <= 1000 && link.scrollIntoView) {
+            link.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+    sections.forEach(function (s) { spy.observe(s.el); });
+    tocLinks.forEach(function (link) {
+      link.addEventListener('click', function (event) {
+        var id = (link.getAttribute('href') || '').replace('#', '');
+        var target = id && document.getElementById(id);
+        if (target) {
+          event.preventDefault();
+          target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+        }
+      });
+    });
+  }
+})();
+</script>
+<script>
+(function () {
+  'use strict';
+
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- Theme ---------- */
+  var toggle = document.getElementById('themeToggle');
+  function syncToggle() {
+    if (!toggle) return;
+    var light = document.documentElement.classList.contains('light');
+    toggle.textContent = light ? '◑' : '◐';
+    toggle.setAttribute('aria-label', light ? 'Switch to dark theme' : 'Switch to light theme');
+  }
+  if (toggle) {
+    toggle.addEventListener('click', function () {
+      document.documentElement.classList.toggle('light');
+      try {
+        localStorage.setItem('archflow-theme', document.documentElement.classList.contains('light') ? 'light' : 'dark');
+      } catch (e) {}
+      syncToggle();
+    });
+  }
+  syncToggle();
+
+  /* ---------- Hero chapter engine ---------- */
+  var chapters = [];
+  try {
+    var meta = document.getElementById('afh-chapters');
+    if (meta && meta.textContent) chapters = JSON.parse(meta.textContent);
+  } catch (e) { chapters = []; }
+
+  var descriptions = [
+    'ARSO publishes hourly XML telemetry; the watchdog catches new or changed documents in ai/rag_sources.',
+    'update_data() writes the merged snapshot to Redis before persisting to PostgreSQL; the vectorizer chunks and embeds documents into pgvector.',
+    'Flask serves the cached snapshot and precomputed history; nginx delivers the static Next.js export and proxies /api/.',
+    'The CLI invokes LangGraph: the router picks rag | sql | redis | splosno, nodes gather evidence, and DeepSeek composes the answer.',
+    'Both planes share one state layer — telemetry for the dashboard, measurements and document vectors for the question-answering agent.'
+  ];
+  var colorMap = {
+    mint: 'var(--accent)',
+    amber: 'var(--accent2)',
+    blue: 'var(--accent)',
+    violet: 'var(--accent2)',
+    white: 'var(--text)'
+  };
+
+  var nav = document.getElementById('chapterNav');
+  var banner = document.getElementById('phaseBanner');
+  var prevBtn = document.getElementById('phasePrev');
+  var nextBtn = document.getElementById('phaseNext');
+  var playBtn = document.getElementById('phasePlay');
+  var active = 0;
+  var timer = null;
+  var playing = !reduceMotion;
+
+  function clearActive() {
+    var nodes = document.querySelectorAll('[data-af-zone], [data-af-entity], [data-af-flow]');
+    for (var i = 0; i < nodes.length; i += 1) nodes[i].classList.remove('is-active');
+  }
+
+  function activate(index, fromUser) {
+    if (!chapters.length) return;
+    active = ((index % chapters.length) + chapters.length) % chapters.length;
+    var chapter = chapters[active];
+    clearActive();
+
+    (chapter.zones || []).forEach(function (id) {
+      var el = document.querySelector('[data-af-zone="' + id + '"]');
+      if (el) el.classList.add('is-active');
+    });
+    (chapter.entities || []).forEach(function (id) {
+      var el = document.querySelector('[data-af-entity="' + id + '"]');
+      if (el) el.classList.add('is-active');
+    });
+    (chapter.flows || []).forEach(function (id) {
+      var el = document.querySelector('[data-af-flow="' + id + '"]');
+      if (el) el.classList.add('is-active');
+    });
+
+    var color = colorMap[chapter.color] || 'var(--accent)';
+    if (banner) {
+      banner.textContent = '▶ ' + chapter.label + ' — ' + (descriptions[active] || '');
+      banner.style.color = color;
+    }
+    var buttons = nav ? nav.querySelectorAll('.chapter-btn') : [];
+    for (var i = 0; i < buttons.length; i += 1) {
+      buttons[i].classList.toggle('active', i === active);
+      buttons[i].setAttribute('aria-pressed', i === active ? 'true' : 'false');
+    }
+    if (fromUser) restartTimer();
+  }
+
+  function startTimer() {
+    if (timer) clearInterval(timer);
+    if (reduceMotion || !playing) return;
+    timer = setInterval(function () { activate(active + 1, false); }, 3800);
+  }
+  function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
+  function restartTimer() { stopTimer(); startTimer(); }
+
+  function syncPlay() {
+    if (!playBtn) return;
+    playBtn.textContent = playing ? '❚❚' : '▶';
+    playBtn.setAttribute('aria-label', playing ? 'Pause animation' : 'Play animation');
+  }
+
+  if (nav && chapters.length) {
+    for (var chapterIndex = 0; chapterIndex < chapters.length; chapterIndex += 1) {
+      var chapter = chapters[chapterIndex];
+      var btn = nav.querySelector('[data-chapter="' + chapterIndex + '"]');
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'chapter-btn';
+        btn.setAttribute('data-chapter', String(chapterIndex));
+        var num = document.createElement('span');
+        num.className = 'num';
+        num.textContent = String(chapterIndex + 1).padStart(2, '0');
+        btn.appendChild(num);
+        btn.appendChild(document.createTextNode(chapter.label.replace(/^\d+\s*·\s*/, '')));
+        nav.appendChild(btn);
+      }
+      (function (index, element) {
+        element.addEventListener('click', function () {
+          playing = false;
+          syncPlay();
+          activate(index, true);
+        });
+      })(chapterIndex, btn);
+    }
+  }
+
+  if (prevBtn) prevBtn.addEventListener('click', function () { activate(active - 1, true); });
+  if (nextBtn) nextBtn.addEventListener('click', function () { activate(active + 1, true); });
+  if (playBtn) playBtn.addEventListener('click', function () {
+    playing = !playing;
+    syncPlay();
+    if (playing) startTimer(); else stopTimer();
+  });
+
+  activate(0, false);
+  syncPlay();
+  startTimer();
+
+  var shell = document.querySelector('.diagram-shell');
+  if (shell) {
+    shell.addEventListener('mouseenter', stopTimer);
+    shell.addEventListener('mouseleave', function () { if (playing) startTimer(); });
+  }
+
+  /* ---------- Print composite snapshot ---------- */
+  function applyCompositePhase() {
+    stopTimer();
+    if (chapters.length) {
+      clearActive();
+      var all = chapters[chapters.length - 1];
+      (all.zones || []).forEach(function (id) {
+        var el = document.querySelector('[data-af-zone="' + id + '"]');
+        if (el) el.classList.add('is-active');
+      });
+      (all.entities || []).forEach(function (id) {
+        var el = document.querySelector('[data-af-entity="' + id + '"]');
+        if (el) el.classList.add('is-active');
+      });
+      (all.flows || []).forEach(function (id) {
+        var el = document.querySelector('[data-af-flow="' + id + '"]');
+        if (el) el.classList.add('is-active');
+      });
+    }
+    if (banner) banner.textContent = '▶ Architecture overview — all phases';
+  }
+  window.addEventListener('beforeprint', applyCompositePhase);
+  window.addEventListener('afterprint', function () {
+    activate(active, false);
+    if (playing) startTimer();
+  });
+  if (window.matchMedia && window.matchMedia('print').matches) applyCompositePhase();
+
+  /* ---------- Scroll reveal ---------- */
+  var revealables = document.querySelectorAll('.reveal');
+  if (reduceMotion || !('IntersectionObserver' in window)) {
+    for (var k = 0; k < revealables.length; k += 1) revealables[k].classList.add('visible');
+  } else {
+    var revealObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('visible');
+        revealObserver.unobserve(entry.target);
+      });
+    }, { threshold: 0, rootMargin: '0px 0px -8% 0px' });
+    for (var m = 0; m < revealables.length; m += 1) revealObserver.observe(revealables[m]);
+  }
+
+  /* ---------- TOC scroll spy ---------- */
+  var tocLinks = document.querySelectorAll('.toc__link');
+  if (tocLinks.length && 'IntersectionObserver' in window) {
+    var linksById = {};
+    var sections = [];
+    tocLinks.forEach(function (link) {
+      var id = (link.getAttribute('href') || '').replace('#', '');
+      var section = id && document.getElementById(id);
+      if (section) {
+        linksById[id] = link;
+        sections.push({ id: id, el: section });
+      }
+    });
+    var spy = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        tocLinks.forEach(function (l) { l.classList.remove('active'); });
+        var link = linksById[entry.target.id];
+        if (link) {
+          link.classList.add('active');
+          if (window.innerWidth <= 1000 && link.scrollIntoView) {
+            link.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+    sections.forEach(function (s) { spy.observe(s.el); });
+    tocLinks.forEach(function (link) {
+      link.addEventListener('click', function (event) {
+        var id = (link.getAttribute('href') || '').replace('#', '');
+        var target = id && document.getElementById(id);
+        if (target) {
+          event.preventDefault();
+          target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+        }
+      });
+    });
+  }
+})();
+</script>
+
+</body>
+</html>

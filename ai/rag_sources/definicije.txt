@@ -1,0 +1,33 @@
+DEFINICIJE ONESNAŽEVAL ZRAKA
+
+PM10 (delci PM10)
+PM10 so delci v zraku z aerodinamičnim premerom manjšim od 10 mikrometrov (µm). Imenujemo jih tudi "vhlevni delci", ker lahko vstopijo v zgornje dihalne poti. Viri PM10 so izgorevanje fosilnih goriv, promet, industrija, gradbeništvo, naravni viri (puščavski prah, morski sprej, cvetni prah). PM10 lahko povzroča draženje dihal, poslabšanje astme in drugih respiratornih bolezni.
+
+PM2.5 (delci PM2.5)
+PM2.5 so delci v zraku z aerodinamičnim premerom manjšim od 2,5 mikrometrov (µm). Imenujemo jih tudi "fine delce". Zaradi majhne velikosti lahko prodrejo globoko v pljuča in v krvni obtok. Viri PM2.5 so podobni kot pri PM10, vendar so finejši delci pogosteje posledica izgorevanja (promet, industrija, kurjenje). PM2.5 je bolj nevaren za zdravje kot PM10.
+
+NO2 (dušikov dioksid)
+NO2 je rdečkasto-rjav plin z ostrim vonjem. Nastaja pri izgorevanju goriv pri visokih temperaturah (promet, elektrarne, industrija). NO2 draži dihala, poslabšuje astmo in prispeva k nastanku kislega dežja ter ozona na tleh.
+
+NOx (dušikovi oksidi)
+NOx je skupno ime za dušikov oksid (NO) in dušikov dioksid (NO2). Nastajajo pri izgorevanju goriv. So prekurzorji za nastanek ozona in sekundarnih delcev.
+
+O3 (ozon)
+Ozon (O3) je plin, ki v stratosferi ščiti pred UV žarki, na tleh pa je onesnaževalo. Nastaja s fotokemičnimi reakcijami med dušikovimi oksidi (NOx) in hlapnimi organskimi spojinami (VOC) ob prisotnosti sončne svetlobe. Ozon draži dihala, poslabšuje astmo in zmanjšuje pljučno funkcijo.
+
+SO2 (žveplov dioksid)
+SO2 je brezbarven plin z ostrim vonjem. Nastaja pri izgorevanju goriv, ki vsebujejo žveplo (premog, nafta). SO2 draži dihala in prispeva k nastanku kislega dežja.
+
+CO (ogljikov monoksid)
+CO je brezbarven in brez vonja plin. Nastaja pri nepopolnem izgorevanju goriv (promet, ogrevanje, industrija). CO se veže na hemoglobin v krvi in zmanjšuje prenos kisika po telesu. Visoke koncentracije so smrtno nevarne.
+
+Benzen (C6H6)
+Benzen je hlapna organska spojina z značilnim vonjem. Nastaja pri izgorevanju goriv in v industriji. Benzen je karcinogen in lahko povzroča levkemijo.
+
+Črni ogljik (black carbon, BC)
+Črni ogljik so delci, ki nastajajo pri nepopolnem izgorevanju (dizel, les, premog). So sestavni del PM2.5. Črni ogljik vpliva na podnebne spremembe in je škodljiv za zdravje.
+
+AQI (indeks kakovosti zraka)
+AQI (Air Quality Index) je indeks, ki poenostavi informacije o kakovosti zraka. Višja vrednost pomeni slabšo kakovost zraka. AQI EU (evropski) in AQI WHO (svetovni) sta dva različna indeksa z različnimi lestvicami.
+
+
