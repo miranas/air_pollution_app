@@ -157,11 +157,6 @@ async def get_history_data(
         try:
             from backend.utils.history_cache import build_history_payload_from_db_async
             payload = await build_history_payload_from_db_async(db, period)
-        except ImportError:
-            logger.exception(
-                "build_history_payload_from_db_async not available; "
-                "history fallback skipped"
-            )
         except Exception as e:
             logger.exception(f"Failed to build history payload from DB: {e}")
 

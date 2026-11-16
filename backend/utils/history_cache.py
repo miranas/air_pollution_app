@@ -6,6 +6,7 @@ import logging
 from typing import Any, Optional
 from flask import current_app
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.analytics.agregation import (
      MAX_POINTS_BY_PERIOD,
@@ -263,6 +264,25 @@ def build_history_payload_from_db(period: str, station_id_filter: str | None = N
         return _build_history_payload(rows, period, start_ts, end_ts)
     finally:
         db.close()
+
+
+async def build_history_payload_from_db_async(
+    db: AsyncSession,
+    period: str,
+    station_id_filter: str | None = None,
+) -> dict:
+    """Async history builder used by the FastAPI fallback.
+
+    Takes an already-open AsyncSession (injected via Depends(get_db)) and
+    returns exactly the same payload shape as the sync builder.
+    """
+    start_ts = _period_start(period)
+    end_ts = datetime.now()
+    result = await db.execute(
+        _history_query(start_ts, end_ts, station_id_filter)
+    )
+    rows = result.all()
+    return _build_history_payload(rows, period, start_ts, end_ts)
 
 
 def cache_history_payload(period: str, payload: dict[str, Any]) -> bool:

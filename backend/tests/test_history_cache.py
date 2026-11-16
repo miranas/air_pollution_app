@@ -5,6 +5,7 @@ These tests cover `_build_history_payload` only: it takes DB rows and returns
 the API payload, without touching the database, Redis or Flask. The sync and
 async builders both delegate to it, so this is the contract both must keep.
 """
+import asyncio
 import os
 from datetime import datetime
 from types import SimpleNamespace
@@ -16,7 +17,10 @@ os.environ.setdefault("DB_HOST", "localhost")
 os.environ.setdefault("DB_PORT", "5432")
 os.environ.setdefault("DB_NAME", "test")
 
-from backend.utils.history_cache import _build_history_payload
+from backend.utils.history_cache import (
+    _build_history_payload,
+    build_history_payload_from_db_async,
+)
 
 
 def make_station(
@@ -119,3 +123,64 @@ def test_build_history_payload_keeps_multiple_stations_and_sorts_newest_first():
     # Newest first, as the API expects.
     assert ljubljana_points[0]["time_to"] > ljubljana_points[1]["time_to"]
     assert ljubljana_points[0]["pm10"] == 30.0
+
+
+# ---------------------------------------------------------------------------
+# Async builder: same payload, using an injected AsyncSession.
+# ---------------------------------------------------------------------------
+
+class FakeResult:
+    def __init__(self, rows):
+        self._rows = rows
+
+    def all(self):
+        return self._rows
+
+
+class FakeAsyncSession:
+    """Minimal AsyncSession stand-in: records queries, returns fixed rows."""
+
+    def __init__(self, rows):
+        self.rows = rows
+        self.queries = []
+
+    async def execute(self, query):
+        self.queries.append(query)
+        return FakeResult(self.rows)
+
+
+def test_async_builder_returns_same_payload_as_pure_transform():
+    measured_at = datetime(2026, 1, 1, 10, 15)
+    rows = [make_row(measured_at, 21.5, "pm10")]
+    session = FakeAsyncSession(rows)
+
+    payload = asyncio.run(
+        build_history_payload_from_db_async(session, "day")
+    )
+
+    assert len(session.queries) == 1
+    assert payload["period"] == "day"
+    assert payload["stations"]["E403"]["measurements_list"][0]["pm10"] == 21.5
+
+
+def test_async_builder_with_no_rows_returns_empty_stations():
+    session = FakeAsyncSession([])
+
+    payload = asyncio.run(
+        build_history_payload_from_db_async(session, "week")
+    )
+
+    assert payload["period"] == "week"
+    assert payload["stations"] == {}
+
+
+def test_async_builder_applies_station_filter_to_query():
+    session = FakeAsyncSession([])
+
+    asyncio.run(
+        build_history_payload_from_db_async(session, "day", "E403")
+    )
+
+    sql = str(session.queries[0])
+    assert "stations.station_id" in sql
+    assert "E403" not in sql  # bind parameter, not inlined
