@@ -1,5 +1,5 @@
 """
-Tests for backend/utils/history_cache.py
+Tests for history payload helpers and analytics used by the history API.
 
 These tests cover pure functions (AQI calculation, aggregation, downsampling)
 before we refactor the module. They serve as a safety net.
@@ -19,15 +19,15 @@ Why 22 tests?
 import pytest
 from datetime import datetime, timedelta
 
-from backend.utils.history_cache import (
-    _to_aqi_band_score,
-    _compute_aqi_index,
-    _attach_aqi_indices,    
-    _period_start,
+from backend.analytics.aqi import (
     AQI_THRESHOLDS_EU,
     AQI_THRESHOLDS_WHO,
-    
+    _attach_aqi_indices,
+    _compute_aqi_index,
+    _to_aqi_band_score,
 )
+
+from backend.utils.history_payload import _period_start
 
 from backend.analytics.agregation import(
     MAX_POINTS_BY_PERIOD,

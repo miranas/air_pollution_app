@@ -155,7 +155,7 @@ async def get_history_data(
     # 2. Fallback: rebuild from DB (delegated to async history builder)
     if payload is None:
         try:
-            from backend.utils.history_cache import build_history_payload_from_db_async
+            from backend.utils.history_payload import build_history_payload_from_db_async
             payload = await build_history_payload_from_db_async(db, period)
         except Exception as e:
             logger.exception(f"Failed to build history payload from DB: {e}")

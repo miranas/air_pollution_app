@@ -1,54 +1,65 @@
+"""Read-through cache for the ``/api/history`` payload.
+
+This module owns **caching only**. Building the payload from database rows
+lives in ``backend/utils/history_payload.py``; request handling lives in
+``backend/routes/``.
+
+Backends
+--------
+Two optional cache backends are supported, in priority order:
+
+1. **Redis** via ``app.extensions["redis_client"]``. This is the normal
+   production path and the same store the hourly update cycle writes to.
+2. **Flask-Caching** via ``app.extensions["cache"]`` or ``app.cache``. Used by
+   deployments that run Flask without Redis.
+
+Outside a Flask application context both lookups return ``None``. Cache reads
+then return ``None`` and writes return ``False``; the API still works, it just
+rebuilds from the database.
+
+Keys
+----
+``history_payload:{period}`` stores the payload for **all** stations. Station
+filtering happens in memory after reading, so one key serves every
+``?station_id=`` request.
+
+Public API
+----------
+- :func:`cache_history_payload` — write a payload for one period.
+- :func:`get_cached_history_payload` — read and optionally filter a payload.
+- :func:`get_history_payload` — read-through: cache, then database, then
+  best-effort write-back.
+- :func:`refresh_history_cache` — rebuild every period (hourly job).
+"""
 from __future__ import annotations
 
-from datetime import datetime, timedelta
 import json
 import logging
 from typing import Any, Optional
+
 from flask import current_app
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.analytics.agregation import (
-     MAX_POINTS_BY_PERIOD,
-    _aggregate_measurements_by_period,
-    _downsample_measurements,
+from backend.utils.history_payload import (
+    ALLOWED_PERIODS,
+    build_history_payload_from_db,
+    filter_history_payload,
 )
-
-from backend.database.db_models import DbModelMeasurement, DbModelPollutant, DbModelStation
-from backend.database.session import SessionLocal
 from backend.utils.serialization import to_serializable
 
 
-
-
-from backend.analytics.aqi import (
-    AQI_THRESHOLDS_EU,
-    AQI_THRESHOLDS_WHO,
-    _attach_aqi_indices,
-    _compute_aqi_index,
-    _to_aqi_band_score,
-    _to_float,
-)
-
-
+#: Prefix for every history payload key. Kept stable so the Flask API, the
+#: FastAPI API and the update job all read and write the same entries.
 HISTORY_CACHE_KEY_PREFIX = 'history_payload:'
-ALLOWED_PERIODS = ('day', 'week', 'month', 'year')
-
-
-def _period_start(period: str) -> datetime:
-    now = datetime.now()
-    if period == 'day':
-        return now - timedelta(days=1)
-    if period == 'week':
-        return now - timedelta(weeks=1)
-    if period == 'month':
-        return now - timedelta(days=30)
-    if period == 'year':
-        return now - timedelta(days=365)
-    raise ValueError('Invalid period')
 
 
 def _get_redis_client() -> Optional[Any]:
+    """Return the Flask app's Redis client, or ``None`` if unavailable.
+
+    The client is registered by ``backend/app.py`` in
+    ``app.extensions["redis_client"]``. Accessing ``current_app`` outside an
+    application context raises ``RuntimeError``; that is treated as "no cache",
+    not as an error, because cache use is optional.
+    """
     try:
         app = current_app
     except RuntimeError:
@@ -60,6 +71,11 @@ def _get_redis_client() -> Optional[Any]:
 
 
 def _get_cache_client() -> Optional[Any]:
+    """Return the Flask-Caching instance, or ``None`` if unavailable.
+
+    Supports both registration styles used across Flask versions:
+    ``app.extensions["cache"]`` and an ``app.cache`` attribute.
+    """
     try:
         app = current_app
     except RuntimeError:
@@ -75,15 +91,53 @@ def _get_cache_client() -> Optional[Any]:
     return None
 
 
+def _cache_clients() -> list[tuple[str, Any]]:
+    """Return available cache clients in priority order.
+
+    Returns:
+        List of ``(backend_name, client)`` pairs. The name is only used in log
+        messages. The list is empty when running outside a Flask app context.
+    """
+    clients: list[tuple[str, Any]] = []
+
+    redis_client = _get_redis_client()
+    if redis_client is not None:
+        clients.append(('redis', redis_client))
+
+    cache_ext = _get_cache_client()
+    if cache_ext is not None:
+        clients.append(('cache', cache_ext))
+
+    return clients
+
+
 def _cache_key(period: str) -> str:
+    """Return the cache key for ``period``.
+
+    Example:
+        ``_cache_key("day")`` -> ``"history_payload:day"``.
+    """
     return f'{HISTORY_CACHE_KEY_PREFIX}{period}'
 
 
 def _serialize_payload(payload: dict[str, Any]) -> str:
+    """Serialize a payload to JSON, handling ``datetime`` values.
+
+    ``to_serializable`` converts dates and other non-JSON Python objects to
+    strings so the payload can be stored in Redis as-is.
+    """
     return json.dumps(payload, default=to_serializable, ensure_ascii=False)
 
 
 def _deserialize_payload(raw_payload: object) -> Optional[dict[str, Any]]:
+    """Turn a cached value into a payload dict, or ``None`` if unusable.
+
+    Accepts bytes (Redis may return bytes), JSON strings and already-decoded
+    dicts, because different cache backends return different types.
+
+    Invalid JSON is logged and treated as a cache miss; a corrupt cache entry
+    must never break the API.
+    """
     if raw_payload is None:
         return None
 
@@ -107,197 +161,107 @@ def _deserialize_payload(raw_payload: object) -> Optional[dict[str, Any]]:
 
 
 def _read_cached_raw_value(cache_key: str) -> object:
-    cached = None
-    redis_client = _get_redis_client()
-    if redis_client is not None:
+    """Read ``cache_key`` from the first backend that has a value.
+
+    Errors are logged and treated as misses so a broken cache backend never
+    breaks the API.
+    """
+    for backend, client in _cache_clients():
+        getter = getattr(client, 'get', None)
+        if getter is None:
+            continue
+
         try:
-            cached = redis_client.get(cache_key)
+            value = getter(cache_key)
         except Exception as e:
-            logging.exception(f'Failed to get {cache_key} from redis: {e}')
+            logging.exception(f'Failed to get {cache_key} from {backend}: {e}')
+            continue
 
-    if cached is None:
-        cache_ext = _get_cache_client()
-        if cache_ext and hasattr(cache_ext, 'get'):
-            try:
-                cached = cache_ext.get(cache_key)
-            except Exception as e:
-                logging.exception(f'Failed to get {cache_key} from cache: {e}')
+        if value is not None:
+            return value
 
-    return cached
+    return None
 
 
 def _write_cached_raw_value(cache_key: str, payload_json: str) -> bool:
-    redis_client = _get_redis_client()
-    if redis_client is not None:
+    """Write ``payload_json`` to the first backend that accepts it.
+
+    Returns:
+        ``True`` if at least one backend stored the value, ``False`` otherwise.
+        A missing cache is not an error; the caller can still serve the data.
+    """
+    for backend, client in _cache_clients():
+        setter = getattr(client, 'set', None)
+        if setter is None:
+            continue
+
         try:
-            redis_client.set(cache_key, payload_json)
+            setter(cache_key, payload_json)
             return True
         except Exception as e:
-            logging.exception(f'Failed to write {cache_key} to redis: {e}')
+            logging.exception(f'Failed to write {cache_key} to {backend}: {e}')
 
-    cache_ext = _get_cache_client()
-    if cache_ext and hasattr(cache_ext, 'set'):
-        try:
-            cache_ext.set(cache_key, payload_json)
-            return True
-        except Exception as e:
-            logging.exception(f'Failed to write {cache_key} to cache: {e}')
-
-    logging.warning(f'No cache client available; skipping cache write for {cache_key}.')
+    logging.warning(
+        f'No cache client available; skipping cache write for {cache_key}.'
+    )
     return False
 
 
-def _filter_history_payload(payload: dict[str, Any], station_id_filter: str | None) -> dict[str, Any]:
-    if not station_id_filter:
-        return payload
-
-    stations = payload.get('stations', {})
-    station_payload = stations.get(station_id_filter)
-    filtered_payload = dict(payload)
-    filtered_payload['stations'] = {station_id_filter: station_payload} if station_payload else {}
-    return filtered_payload
-
-
-def _history_query(
-    start_ts: datetime,
-    end_ts: datetime,
-    station_id_filter: str | None = None,
-):
-    """Build the SELECT used by both sync and async history builders.
-
-    Kept separate from the session so the same statement works with
-    ``Session`` and ``AsyncSession``.
-    """
-    query = (
-        select(DbModelStation, DbModelMeasurement, DbModelPollutant)
-        .join(DbModelMeasurement, DbModelMeasurement.station_id == DbModelStation.id)
-        .join(DbModelPollutant, DbModelPollutant.id == DbModelMeasurement.pollutant_id)
-        .where(DbModelMeasurement.measured_at >= start_ts)
-        .where(DbModelMeasurement.measured_at <= end_ts)
-        .order_by(
-            DbModelStation.station_id.asc(),
-            DbModelMeasurement.measured_at.desc(),
-        )
-    )
-
-    if station_id_filter:
-        query = query.where(DbModelStation.station_id == station_id_filter)
-
-    return query
-
-
-def _build_history_payload(
-    rows: list[Any],
-    period: str,
-    start_ts: datetime,
-    end_ts: datetime,
-) -> dict:
-    """Transform DB rows into the history API payload.
-
-    Pure function: no database, no cache, no Flask. Both the sync and async
-    builders call it, so the output shape stays identical.
-    """
-    stations: dict[str, dict[str, Any]] = {}
-    for station, measurement, pollutant in rows:
-        station_key = station.station_id
-        station_bucket = stations.setdefault(
-            station_key,
-            {
-                'info': {
-                    'station_id': station.station_id,
-                    'station_name': station.station_name,
-                    'latitude': station.latitude,
-                    'longitude': station.longitude,
-                },
-                'by_time': {},
-            },
-        )
-
-        iso_time = measurement.measured_at.isoformat()
-        time_bucket = station_bucket['by_time'].setdefault(
-            iso_time,
-            {
-                'station_id': station.station_id,
-                'station_name': station.station_name,
-                'time_to': iso_time,
-            },
-        )
-        time_bucket[pollutant.name] = measurement.value
-
-    max_points_per_station = MAX_POINTS_BY_PERIOD.get(period, 500)
-    payload_stations: dict[str, dict[str, Any]] = {}
-    for station_key, station_data in stations.items():
-        by_time = station_data['by_time']
-        raw_measurements = sorted(
-            by_time.values(),
-            key=lambda item: item.get('time_to', ''),
-            reverse=True,
-        )
-
-        aggregated_measurements = _aggregate_measurements_by_period(raw_measurements, period)
-        measurements_list = _downsample_measurements(aggregated_measurements, max_points_per_station)
-        measurements_list = _attach_aqi_indices(measurements_list)
-
-        payload_stations[station_key] = {
-            'info': station_data['info'],
-            'measurements_list': measurements_list,
-            'total_points': len(by_time),
-        }
-
-    return {
-        'period': period,
-        'from': start_ts.isoformat(),
-        'to': end_ts.isoformat(),
-        'stations': payload_stations,
-    }
-
-
-def build_history_payload_from_db(period: str, station_id_filter: str | None = None) -> dict:
-    """Sync history builder used by Flask and the cache refresh job."""
-    db = SessionLocal()
-    try:
-        start_ts = _period_start(period)
-        end_ts = datetime.now()
-        rows = db.execute(
-            _history_query(start_ts, end_ts, station_id_filter)
-        ).all()
-        return _build_history_payload(rows, period, start_ts, end_ts)
-    finally:
-        db.close()
-
-
-async def build_history_payload_from_db_async(
-    db: AsyncSession,
-    period: str,
-    station_id_filter: str | None = None,
-) -> dict:
-    """Async history builder used by the FastAPI fallback.
-
-    Takes an already-open AsyncSession (injected via Depends(get_db)) and
-    returns exactly the same payload shape as the sync builder.
-    """
-    start_ts = _period_start(period)
-    end_ts = datetime.now()
-    result = await db.execute(
-        _history_query(start_ts, end_ts, station_id_filter)
-    )
-    rows = result.all()
-    return _build_history_payload(rows, period, start_ts, end_ts)
-
-
 def cache_history_payload(period: str, payload: dict[str, Any]) -> bool:
+    """Store one period's payload in the cache.
+
+    Args:
+        period: One of ``ALLOWED_PERIODS``.
+        payload: Full payload for all stations.
+
+    Returns:
+        ``True`` if the payload was stored, ``False`` if no cache backend was
+        available or all writes failed.
+    """
     return _write_cached_raw_value(_cache_key(period), _serialize_payload(payload))
 
 
-def get_cached_history_payload(period: str, station_id_filter: str | None = None) -> Optional[dict[str, Any]]:
-    cached_payload = _deserialize_payload(_read_cached_raw_value(_cache_key(period)))
+def get_cached_history_payload(
+    period: str,
+    station_id_filter: str | None = None,
+) -> Optional[dict[str, Any]]:
+    """Read one period's payload from the cache.
+
+    Args:
+        period: One of ``ALLOWED_PERIODS``.
+        station_id_filter: Optional ARSO station code applied in memory.
+
+    Returns:
+        The payload, or ``None`` on a cache miss or an unreadable entry.
+    """
+    cached_payload = _deserialize_payload(
+        _read_cached_raw_value(_cache_key(period))
+    )
     if cached_payload is None:
         return None
 
-    return _filter_history_payload(cached_payload, station_id_filter)
+    return filter_history_payload(cached_payload, station_id_filter)
 
 
-def get_history_payload(period: str, station_id_filter: str | None = None) -> Optional[dict[str, Any]]:
+def get_history_payload(
+    period: str,
+    station_id_filter: str | None = None,
+) -> Optional[dict[str, Any]]:
+    """Return the history payload, using the cache as a read-through layer.
+
+    Flow:
+        1. Try the cache.
+        2. On a miss, build from the database.
+        3. Best-effort write the fresh payload back to the cache.
+        4. Apply the station filter and return.
+
+    Args:
+        period: One of ``ALLOWED_PERIODS``.
+        station_id_filter: Optional ARSO station code.
+
+    Returns:
+        The payload, or ``None`` if the database build failed.
+    """
     cached_payload = get_cached_history_payload(period, station_id_filter)
     if cached_payload is not None:
         return cached_payload
@@ -309,11 +273,25 @@ def get_history_payload(period: str, station_id_filter: str | None = None) -> Op
         return None
 
     cache_history_payload(period, payload)
-    return _filter_history_payload(payload, station_id_filter)
+    return filter_history_payload(payload, station_id_filter)
 
 
-def refresh_history_cache(periods: tuple[str, ...] = ALLOWED_PERIODS) -> bool:
+def refresh_history_cache(
+    periods: tuple[str, ...] = ALLOWED_PERIODS,
+) -> bool:
+    """Rebuild and store the payload for every period.
+
+    Called by the hourly update cycle after new measurements are inserted.
+    A failure for one period does not stop the others.
+
+    Args:
+        periods: Periods to refresh; defaults to all allowed periods.
+
+    Returns:
+        ``True`` only if every period was built and stored successfully.
+    """
     success = True
+
     for period in periods:
         try:
             payload = build_history_payload_from_db(period)
@@ -321,5 +299,18 @@ def refresh_history_cache(periods: tuple[str, ...] = ALLOWED_PERIODS) -> bool:
                 success = False
         except Exception:
             success = False
-            logging.exception(f'Failed to refresh history cache for period={period}')
+            logging.exception(
+                f'Failed to refresh history cache for period={period}'
+            )
+
     return success
+
+
+__all__ = [
+    'ALLOWED_PERIODS',
+    'HISTORY_CACHE_KEY_PREFIX',
+    'cache_history_payload',
+    'get_cached_history_payload',
+    'get_history_payload',
+    'refresh_history_cache',
+]
