@@ -5,6 +5,7 @@ import json
 import logging
 from typing import Any, Optional
 from flask import current_app
+from sqlalchemy import select
 
 from backend.analytics.agregation import (
      MAX_POINTS_BY_PERIOD,
@@ -156,79 +157,110 @@ def _filter_history_payload(payload: dict[str, Any], station_id_filter: str | No
     return filtered_payload
 
 
+def _history_query(
+    start_ts: datetime,
+    end_ts: datetime,
+    station_id_filter: str | None = None,
+):
+    """Build the SELECT used by both sync and async history builders.
+
+    Kept separate from the session so the same statement works with
+    ``Session`` and ``AsyncSession``.
+    """
+    query = (
+        select(DbModelStation, DbModelMeasurement, DbModelPollutant)
+        .join(DbModelMeasurement, DbModelMeasurement.station_id == DbModelStation.id)
+        .join(DbModelPollutant, DbModelPollutant.id == DbModelMeasurement.pollutant_id)
+        .where(DbModelMeasurement.measured_at >= start_ts)
+        .where(DbModelMeasurement.measured_at <= end_ts)
+        .order_by(
+            DbModelStation.station_id.asc(),
+            DbModelMeasurement.measured_at.desc(),
+        )
+    )
+
+    if station_id_filter:
+        query = query.where(DbModelStation.station_id == station_id_filter)
+
+    return query
+
+
+def _build_history_payload(
+    rows: list[Any],
+    period: str,
+    start_ts: datetime,
+    end_ts: datetime,
+) -> dict:
+    """Transform DB rows into the history API payload.
+
+    Pure function: no database, no cache, no Flask. Both the sync and async
+    builders call it, so the output shape stays identical.
+    """
+    stations: dict[str, dict[str, Any]] = {}
+    for station, measurement, pollutant in rows:
+        station_key = station.station_id
+        station_bucket = stations.setdefault(
+            station_key,
+            {
+                'info': {
+                    'station_id': station.station_id,
+                    'station_name': station.station_name,
+                    'latitude': station.latitude,
+                    'longitude': station.longitude,
+                },
+                'by_time': {},
+            },
+        )
+
+        iso_time = measurement.measured_at.isoformat()
+        time_bucket = station_bucket['by_time'].setdefault(
+            iso_time,
+            {
+                'station_id': station.station_id,
+                'station_name': station.station_name,
+                'time_to': iso_time,
+            },
+        )
+        time_bucket[pollutant.name] = measurement.value
+
+    max_points_per_station = MAX_POINTS_BY_PERIOD.get(period, 500)
+    payload_stations: dict[str, dict[str, Any]] = {}
+    for station_key, station_data in stations.items():
+        by_time = station_data['by_time']
+        raw_measurements = sorted(
+            by_time.values(),
+            key=lambda item: item.get('time_to', ''),
+            reverse=True,
+        )
+
+        aggregated_measurements = _aggregate_measurements_by_period(raw_measurements, period)
+        measurements_list = _downsample_measurements(aggregated_measurements, max_points_per_station)
+        measurements_list = _attach_aqi_indices(measurements_list)
+
+        payload_stations[station_key] = {
+            'info': station_data['info'],
+            'measurements_list': measurements_list,
+            'total_points': len(by_time),
+        }
+
+    return {
+        'period': period,
+        'from': start_ts.isoformat(),
+        'to': end_ts.isoformat(),
+        'stations': payload_stations,
+    }
+
+
 def build_history_payload_from_db(period: str, station_id_filter: str | None = None) -> dict:
+    """Sync history builder used by Flask and the cache refresh job."""
     db = SessionLocal()
     try:
         start_ts = _period_start(period)
         end_ts = datetime.now()
-
-        query = (
-            db.query(DbModelStation, DbModelMeasurement, DbModelPollutant)
-            .join(DbModelMeasurement, DbModelMeasurement.station_id == DbModelStation.id)
-            .join(DbModelPollutant, DbModelPollutant.id == DbModelMeasurement.pollutant_id)
-            .filter(DbModelMeasurement.measured_at >= start_ts)
-            .filter(DbModelMeasurement.measured_at <= end_ts)
-            .order_by(DbModelStation.station_id.asc(), DbModelMeasurement.measured_at.desc())
-        )
-
-        if station_id_filter:
-            query = query.filter(DbModelStation.station_id == station_id_filter)
-
-        rows = query.all()
-
-        stations: dict[str, dict[str, Any]] = {}
-        for station, measurement, pollutant in rows:
-            station_key = station.station_id
-            station_bucket = stations.setdefault(
-                station_key,
-                {
-                    'info': {
-                        'station_id': station.station_id,
-                        'station_name': station.station_name,
-                        'latitude': station.latitude,
-                        'longitude': station.longitude,
-                    },
-                    'by_time': {},
-                },
-            )
-
-            iso_time = measurement.measured_at.isoformat()
-            time_bucket = station_bucket['by_time'].setdefault(
-                iso_time,
-                {
-                    'station_id': station.station_id,
-                    'station_name': station.station_name,
-                    'time_to': iso_time,
-                },
-            )
-            time_bucket[pollutant.name] = measurement.value
-
-        max_points_per_station = MAX_POINTS_BY_PERIOD.get(period, 500)
-        payload_stations: dict[str, dict[str, Any]] = {}
-        for station_key, station_data in stations.items():
-            by_time = station_data['by_time']
-            raw_measurements = sorted(
-                by_time.values(),
-                key=lambda item: item.get('time_to', ''),
-                reverse=True,
-            )
-
-            aggregated_measurements = _aggregate_measurements_by_period(raw_measurements, period)
-            measurements_list = _downsample_measurements(aggregated_measurements, max_points_per_station)
-            measurements_list = _attach_aqi_indices(measurements_list)
-
-            payload_stations[station_key] = {
-                'info': station_data['info'],
-                'measurements_list': measurements_list,
-                'total_points': len(by_time),
-            }
-
-        return {
-            'period': period,
-            'from': start_ts.isoformat(),
-            'to': end_ts.isoformat(),
-            'stations': payload_stations,
-        }
+        rows = db.execute(
+            _history_query(start_ts, end_ts, station_id_filter)
+        ).all()
+        return _build_history_payload(rows, period, start_ts, end_ts)
     finally:
         db.close()
 
