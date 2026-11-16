@@ -475,10 +475,31 @@ def test_does_not_retry_4xx(monkeypatch):
 3. `insert_all_data` naj vrne `bool` (ali dvigne),
 4. history refresh samo, če je DB insert uspel.
 
-### Step 4 – časovni pas
+### Step 4 – časovni pas ✅ (odločeno 2026-11-16)
 
-- ali `TZ=Europe/Ljubljana` v okolju,
-- ali shranjevanje aware UTC timestampov in pretvorba na meji prikaza.
+**Odločitev:** shranjujemo aware UTC, v lokalni čas pretvarjamo samo na meji prikaza.
+
+- V bazi bo `measured_at` tipa `timestamptz` (Faza 3) in bo edini vir resnice.
+- Parser prebere lokalni čas ARSO (`Europe/Ljubljana`) in ga takoj pretvori v UTC:
+  `datetime.strptime(...).replace(tzinfo=ZoneInfo("Europe/Ljubljana")).astimezone(timezone.utc)`.
+- Vse poizvedbe primerjajo aware UTC: `datetime.now(timezone.utc)`.
+- API vrne ISO 8601 z offsetom (`+00:00`); pretvorba v `Europe/Ljubljana` se zgodi
+  na prikazu (frontend).
+- `TZ=Europe/Ljubljana` v containerjih ostane kot varnostna mreža za knjižnice,
+  ki uporabljajo sistemski čas. To **ni** mehanizem pravilnosti.
+
+**Zakaj:** prehod CEST/CET (zadnja nedelja v marcu in oktobru) naredi naivne
+čase dvoumne. Aware UTC je vedno enoličen, zato so primerjave, vrstni red in
+okna pravilni ne glede na strežnik.
+
+**Vmesno stanje (do Faze 3):** koda še uporablja naivne `datetime.now()` in
+`DateTime` brez timezone. Zato so okna in bucketing zamaknjeni za 1–2 h
+(glej razdelek 3.3). Migracija v Fazi 3 to odpravi skupaj s TimescaleDB.
+
+**TimescaleDB:** hypertable ne spremeni tipa stolpca sam.
+`ALTER ... TYPE timestamptz USING measured_at AT TIME ZONE 'Europe/Ljubljana'`
+ostaja obvezen korak. `time_bucket(..., 'Europe/Ljubljana')` se uporabi le tam,
+kjer so bucketi vezani na lokalni dan.
 
 ### Step 5 – unique index
 
@@ -577,3 +598,4 @@ with app.app_context():
 | 2026-11-10 | Step 1 | Odstranjen `@handle_exceptions` iz `fetch_arso_xml` in `parse_stations_from_xml`; opozorilo v docstringu; zožen `handle_http_request_exception`; popravljena f-string v `handle_service_exception` | `compile OK`, 22/22 testov, `build_history_payload_from_db('day')` → 23 postaj |
 | 2026-11-10 | Step 2 | Zapisana politika, osnutek kode, razlaga in testi za retry | čaka implementacijo |
 | 2026-11-14 | Step 2 | Implementiran retry v `fetch_arso_xml`: 3 poskusi, backoff 1 s/2 s, retry za `Timeout`, `ConnectionError`, 429 in 5xx; `@handle_http_request_exception` odstranjen (zanka vrača tuple sama); dodani 4 testi | 38/38 testov |
+| 2026-11-16 | Step 4 | Zapisana odločitev: aware UTC v `timestamptz`, pretvorba v `Europe/Ljubljana` samo na prikazu; `TZ` v containerju ostane varnostna mreža; TimescaleDB ne odpravi `ALTER` koraka | dokument posodobljen |
