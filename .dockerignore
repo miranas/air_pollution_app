@@ -1,34 +1,29 @@
-
-# bytecode
+# Python
 __pycache__/
-*.py[cod] # compiled files
-*$py.class # Jython compiled files
-*.pyo # optimized files
-.Python-Egg-Info/ # egg info
-
-# virtual environment
+*.py[cod]
+*.pyo
+.venv/
 venv/
+.pytest_cache/
+.ruff_cache/
 
-# environment variables
+# Secrets
 .env
 
-# Documents and notes
-*.md
-.ipynb_checkpoints/ # Jupyter Notebook checkpoints
-
-# Git
+# Git and IDE
 .git/
 .gitignore
+.idea/
+.claude/
+.aider*
 
-# archive
+# Documentation and notes
+*.md
+docs/
+
+# Archive and local-only data
 archive/
-
-frontend-next/node_modules
-frontend-next/.next
-frontend-next/out
-archive/frontend/node_modules
-archive/frontend/out
-
-
-
- 
+node_modules/
+frontend-next/
+ai/rag_sources/Letno_porocilo_2024_za_splet.pdf
+python3.13
