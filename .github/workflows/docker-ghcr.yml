@@ -80,10 +80,7 @@ jobs:
           host: ${{ secrets.HETZNER_HOST }}
           username: root
           key: ${{ secrets.HETZNER_SSH_KEY }}
-          source: |
-            docker/docker-compose.yml
-            docker/nginx.conf
-            prometheus.yml
+          source: "docker/docker-compose.yml,docker/nginx.conf,prometheus.yml"
           target: "/opt/air_pollution_app"
           strip_components: 0
           rm: false
