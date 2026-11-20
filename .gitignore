@@ -23,11 +23,18 @@ docs/.obsidian/
 
 # Node
 node_modules/
+frontend-next/.next/
+frontend-next/out/
 
 # Misc
 .DS_Store
 .migrations/
 .archive/
+*.save
+.~lock*
+
+# Large source documents kept locally (the regulation PDF stays tracked)
+ai/rag_sources/Letno_porocilo_2024_za_splet.pdf
 
 # HF cache
 hf_cache/
