@@ -8,8 +8,8 @@ from backend.data.update_data import update_data
 from backend.database.session import SessionLocal
 from backend.database.db_models import DbModelStation, DbModelMeasurement, DbModelPollutant
 from sqlalchemy import func
-from backend.utils.redis import insert_merged_data_into_cache
-from backend.utils.redis import get_latest_merged_data_fallback
+from backend.utils.redis_client import insert_merged_data_into_cache
+from backend.utils.redis_client import get_latest_merged_data_fallback
 from backend.utils.history_cache import get_history_payload
 
 

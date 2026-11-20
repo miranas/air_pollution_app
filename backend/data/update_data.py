@@ -6,7 +6,7 @@ from typing import Any, List, Tuple
 import os
 import logging
 logging.basicConfig(level=logging.INFO)
-from backend.utils.redis import insert_merged_data_into_cache
+from backend.utils.redis_client import insert_merged_data_into_cache
 from backend.utils.history_cache import refresh_history_cache
 from backend.parsers.insert_data import insert_all_data   
 
