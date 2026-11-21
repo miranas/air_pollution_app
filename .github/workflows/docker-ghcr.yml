@@ -100,11 +100,11 @@ jobs:
             echo ${{ secrets.HETZNER_GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             # Uporabi -f docker/docker-compose.yml povsod
-            docker compose -f docker/docker-compose.yml pull
-            docker compose -f docker/docker-compose.yml up -d --force-recreate --remove-orphans backend redis nginx
+            docker compose --env-file .env -f docker/docker-compose.yml pull
+            docker compose --env-file .env -f docker/docker-compose.yml up -d --force-recreate --remove-orphans backend redis nginx
 
             echo "--- compose ps ---"
-            docker compose -f docker/docker-compose.yml ps
+            docker compose --env-file .env -f docker/docker-compose.yml ps
             echo "--- listening ports ---"
             ss -tulpen | grep -E ':80|:8000|:5000|:8501' || true
             echo "--- local health checks ---"
@@ -129,8 +129,8 @@ jobs:
             echo "api/latest sample:"
             head -n 5 /tmp/api_latest.json || true
 
-            grep -qi "project" /tmp/api_status.json || (echo "ERROR: /api/status did not return backend JSON" && docker compose -f docker/docker-compose.yml logs --tail=120 nginx backend && exit 1)
-            [ "${latest_ok}" = "1" ] || (echo "ERROR: /api/latest did not become ready (HTTP 200)" && docker compose -f docker/docker-compose.yml logs --tail=180 backend && exit 1)
+            grep -qi "project" /tmp/api_status.json || (echo "ERROR: /api/status did not return backend JSON" && docker compose --env-file .env -f docker/docker-compose.yml logs --tail=120 nginx backend && exit 1)
+            [ "${latest_ok}" = "1" ] || (echo "ERROR: /api/latest did not become ready (HTTP 200)" && docker compose --env-file .env -f docker/docker-compose.yml logs --tail=180 backend && exit 1)
 
             docker image prune -f
       

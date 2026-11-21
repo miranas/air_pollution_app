@@ -99,6 +99,11 @@ volumes:
   ollama_data:
   postgres_data:
 
+networks:
+  default:
+    external: true
+    name: air_pollution_network
+
 
 
 
