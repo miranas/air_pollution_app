@@ -100,16 +100,33 @@ jobs:
             echo ${{ secrets.HETZNER_GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             # Uporabi -f docker/docker-compose.yml povsod
-            docker compose --env-file .env -f docker/docker-compose.yml pull
+            docker compose --env-file .env -f docker/docker-compose.yml pull backend
             docker compose --env-file .env -f docker/docker-compose.yml up -d --force-recreate --remove-orphans backend redis nginx
 
             echo "--- compose ps ---"
             docker compose --env-file .env -f docker/docker-compose.yml ps
             echo "--- listening ports ---"
             ss -tulpen | grep -E ':80|:8000|:5000|:8501' || true
-            echo "--- local health checks ---"
-            curl -fsS http://127.0.0.1/api/status >/tmp/api_status.json
-            curl -fsS http://127.0.0.1/ >/tmp/root_page.html
+
+            echo "--- local health checks (with retry) ---"
+            status_ok=0
+            for i in $(seq 1 15); do
+              code=$(curl -sS -o /tmp/api_status.json -w "%{http_code}" --max-time 5 http://127.0.0.1/api/status || true)
+              echo "attempt ${i}: /api/status HTTP ${code}"
+              if [ "${code}" = "200" ]; then status_ok=1; break; fi
+              sleep 3
+            done
+            [ "${status_ok}" = "1" ] || (echo "ERROR: /api/status did not become ready" && docker compose --env-file .env -f docker/docker-compose.yml logs --tail=120 nginx backend && exit 1)
+
+            root_ok=0
+            for i in $(seq 1 10); do
+              code=$(curl -sS -o /tmp/root_page.html -w "%{http_code}" --max-time 5 http://127.0.0.1/ || true)
+              echo "attempt ${i}: / HTTP ${code}"
+              if [ "${code}" = "200" ]; then root_ok=1; break; fi
+              sleep 2
+            done
+            [ "${root_ok}" = "1" ] || (echo "ERROR: frontend did not become ready" && docker compose --env-file .env -f docker/docker-compose.yml logs --tail=120 nginx backend && exit 1)
+
             echo "API status sample:"
             head -n 5 /tmp/api_status.json || true
             echo "Root page sample:"
