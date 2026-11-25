@@ -102,11 +102,20 @@ jobs:
             # Uporabi -f docker/docker-compose.yml povsod
             docker compose --env-file .env -f docker/docker-compose.yml pull backend
             docker compose --env-file .env -f docker/docker-compose.yml up -d --force-recreate --remove-orphans backend redis nginx
+            # Monitoring services are recreated only when their own config changes.
+            docker compose --env-file .env -f docker/docker-compose.yml up -d prometheus grafana portainer
 
             echo "--- compose ps ---"
             docker compose --env-file .env -f docker/docker-compose.yml ps
             echo "--- listening ports ---"
             ss -tulpen | grep -E ':80|:8000|:5000|:8501' || true
+
+            # Fail the deploy if a monitoring service is exposed beyond localhost.
+            if ss -tln | grep -E ':(3000|9090|9443)[[:space:]]' | grep -vq '127\.0\.0\.1'; then
+              echo "ERROR: monitoring port exposed on a public interface"
+              ss -tln | grep -E ':(3000|9090|9443)[[:space:]]' || true
+              exit 1
+            fi
 
             echo "--- local health checks (with retry) ---"
             status_ok=0
